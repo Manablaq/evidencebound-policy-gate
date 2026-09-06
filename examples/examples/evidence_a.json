@@ -1,0 +1,1 @@
+{"issuer_id":"publisher-a","issuer_key_id":"publisher-a-key-2026","observation":"Invoice inv-2026-001 is paid in full.","published_at":1788685000,"record_id":"invoice-2026-001-a","signature":"demo-signature-a-v1","signed_payload_hash":"a7d9d3a2d38aae91adccf08ddd3e4ecb15608ad849e9cfa91d506d2ab86c9add","source_group":"accounting-system","valid_until":1788771400,"version":1}
