@@ -40,10 +40,10 @@ threshold.
 
 ## Links to attach after deployment
 
-- repository and corrected commit: pending deployment;
+- repository: `https://github.com/Manablaq/evidencebound-policy-gate`;
 - contract address: `0x1799625F92fCB2A933C33B96C1C1a25328fFC14F`;
 - deployment transaction: `0xc7f89e2699ab86a32d724218f2bb884985d56b8e412973d16ea521d70ba0094e`;
 - Explorer/source verification: `https://explorer-bradbury.genlayer.com/`;
-- Direct Mode test run: pending official runtime;
+- live Bradbury lifecycle: `case_id=1`, first resolution allowed, challenged, then re-resolved;
 - audit report: `docs/AUDIT_REPORT.md`;
 - evidence schema: `docs/EVIDENCE_RECORD_SPEC.md`.
