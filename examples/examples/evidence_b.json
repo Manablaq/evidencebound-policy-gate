@@ -1,1 +1,0 @@
-{"issuer_id":"publisher-b","issuer_key_id":"delivery-system-key-2026","observation":"Delivery inv-2026-001 is complete.","published_at":1788685000,"record_id":"invoice-2026-001-b","signature":"demo-signature-b-v1","signed_payload_hash":"ede468aeb4c38c4bdc79262d6eb34508188da705541545e0a9a259507ded5be7","source_group":"delivery-system","valid_until":1788771400,"version":1}
