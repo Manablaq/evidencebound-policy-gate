@@ -14,9 +14,11 @@ usable by a consumer unless it is consensus-bound and finalized.
 
 Each record also carries an issuer signature artifact and a signed payload
 hash. The contract binds the artifact to the exact body hash and to the
-registered key identifier; deployments that need cryptographic signature
-verification should perform that verification in the issuer/evidence layer
-before publishing the record.
+registered key identifier. Evidence URLs must also match the registered
+issuer's safe HTTPS origin and exact/descendant path, both at submission time
+and during validator re-evaluation. This corrected implementation uses that
+authority-boundary remedy rather than claiming to implement asymmetric
+cryptography inside GenVM.
 """
 
 from genlayer import *
@@ -214,16 +216,57 @@ def _signed_payload_hash(record: dict) -> str:
     return hashlib.sha256(canonical_payload.encode("utf-8")).hexdigest()
 
 
+def _safe_https_parts(uri: str):
+    """Return (lowercase authority, path) for a deliberately limited HTTPS URI."""
+    value = str(uri)
+    if value != value.strip() or not value.startswith("https://"):
+        return None
+    remainder = value[len("https://"):]
+    if remainder == "" or any(character in remainder for character in ("?", "#", "@", "\\", "%", "\x00", "\r", "\n", "\t")):
+        return None
+    slash = remainder.find("/")
+    if slash < 0:
+        authority = remainder
+        path = "/"
+    else:
+        authority = remainder[:slash]
+        path = remainder[slash:]
+    if authority == "" or ":" in authority:
+        return None
+    for character in authority:
+        if not (character.isalnum() or character in (".", "-")):
+            return None
+    if not path.startswith("/") or "//" in path:
+        return None
+    if any(segment in (".", "..") for segment in path.split("/")):
+        return None
+    return authority.lower(), path
+
+
+def _uri_matches_publisher(uri: str, publisher_uri: str) -> bool:
+    """Require exact HTTPS origin and an exact/descendant safe path."""
+    candidate = _safe_https_parts(uri)
+    publisher = _safe_https_parts(publisher_uri)
+    if candidate is None or publisher is None or candidate[0] != publisher[0]:
+        return False
+    publisher_path = publisher[1].rstrip("/") or "/"
+    candidate_path = candidate[1]
+    return candidate_path == publisher_path or candidate_path.startswith(publisher_path + "/")
+
+
 def _fetch_record(uri: str, expected_hash: str, expected_issuer: str,
                   expected_group: str, expected_record_id: str,
                   expected_version: u256, expected_published_at: u256,
-                  expected_valid_until: u256, issuer_key_id: str):
+                  expected_valid_until: u256, issuer_key_id: str,
+                  publisher_uri: str):
     """Fetch and verify one immutable/versioned evidence record.
 
     The digest is over the complete UTF-8 response body. The record metadata
     is then checked against the deterministic case snapshot. A caller cannot
     swap a different record behind an approved URL without causing an error.
     """
+    if not _uri_matches_publisher(uri, publisher_uri):
+        return None, _error_result("evidence_publisher_mismatch")
     try:
         response = gl.nondet.web.get(uri)
         body = response.body.decode("utf-8", errors="replace")
@@ -311,6 +354,7 @@ def _evaluate_snapshot(snapshot: dict) -> str:
         snapshot["evidence_a_uri"], snapshot["evidence_a_hash"], snapshot["evidence_a_issuer"],
         snapshot["evidence_a_group"], snapshot["evidence_a_record_id"], snapshot["evidence_a_version"],
         snapshot["evidence_a_published_at"], snapshot["evidence_a_valid_until"], snapshot["evidence_a_key_id"],
+        snapshot["evidence_a_publisher_uri"],
     )
     if error_a is not None:
         error_a["evidence_a_hash"] = snapshot["evidence_a_hash"]
@@ -322,6 +366,7 @@ def _evaluate_snapshot(snapshot: dict) -> str:
         snapshot["evidence_b_uri"], snapshot["evidence_b_hash"], snapshot["evidence_b_issuer"],
         snapshot["evidence_b_group"], snapshot["evidence_b_record_id"], snapshot["evidence_b_version"],
         snapshot["evidence_b_published_at"], snapshot["evidence_b_valid_until"], snapshot["evidence_b_key_id"],
+        snapshot["evidence_b_publisher_uri"],
     )
     if error_b is not None:
         error_b["evidence_a_hash"] = snapshot["evidence_a_hash"]
@@ -335,6 +380,7 @@ def _evaluate_snapshot(snapshot: dict) -> str:
             snapshot["challenge_uri"], snapshot["challenge_hash"], snapshot["challenge_issuer"],
             snapshot["challenge_group"], snapshot["challenge_record_id"], snapshot["challenge_version"],
             snapshot["challenge_published_at"], snapshot["challenge_valid_until"], snapshot["challenge_key_id"],
+            snapshot["challenge_publisher_uri"],
         )
         if error_c is not None:
             error_c["evidence_a_hash"] = snapshot["evidence_a_hash"]
@@ -415,8 +461,8 @@ class EvidenceBoundPolicyGate(gl.Contract):
         self._require_text(source_group, "source_group")
         self._require_text(publisher_uri, "publisher_uri")
         self._require_text(key_id, "key_id")
-        if not publisher_uri.startswith("https://"):
-            raise gl.vm.UserError("publisher_uri must use https")
+        if _safe_https_parts(publisher_uri) is None:
+            raise gl.vm.UserError("publisher_uri must be a safe HTTPS origin/path")
         if self.issuer_registered.get(issuer_id, False):
             raise gl.vm.UserError("issuer already registered")
         self.issuers[issuer_id] = Issuer(
@@ -520,6 +566,10 @@ class EvidenceBoundPolicyGate(gl.Contract):
         issuer_b = self.issuers.get(evidence_b_issuer)
         if not issuer_a.active or not issuer_b.active:
             raise gl.vm.UserError("evidence issuer is not active")
+        if not _uri_matches_publisher(evidence_a_uri, issuer_a.publisher_uri):
+            raise gl.vm.UserError("evidence A URI is outside its registered publisher authority")
+        if not _uri_matches_publisher(evidence_b_uri, issuer_b.publisher_uri):
+            raise gl.vm.UserError("evidence B URI is outside its registered publisher authority")
         if issuer_a.source_group == issuer_b.source_group:
             raise gl.vm.UserError("corroboration requires distinct source groups")
         if _canonical(evidence_a_uri) == _canonical(evidence_b_uri):
@@ -672,6 +722,10 @@ class EvidenceBoundPolicyGate(gl.Contract):
         issuer_b = self.issuers.get(evidence_b_issuer)
         if not issuer_a.active or not issuer_b.active:
             raise gl.vm.UserError("evidence issuer is not active")
+        if not _uri_matches_publisher(evidence_a_uri, issuer_a.publisher_uri):
+            raise gl.vm.UserError("evidence A URI is outside its registered publisher authority")
+        if not _uri_matches_publisher(evidence_b_uri, issuer_b.publisher_uri):
+            raise gl.vm.UserError("evidence B URI is outside its registered publisher authority")
         if issuer_a.source_group == issuer_b.source_group:
             raise gl.vm.UserError("corroboration requires distinct source groups")
         if _canonical(evidence_a_uri) == _canonical(evidence_b_uri):
@@ -752,6 +806,8 @@ class EvidenceBoundPolicyGate(gl.Contract):
         issuer = self.issuers.get(challenge_issuer)
         if not issuer.active:
             raise gl.vm.UserError("challenge issuer is not active")
+        if not _uri_matches_publisher(challenge_uri, issuer.publisher_uri):
+            raise gl.vm.UserError("challenge URI is outside its registered publisher authority")
         if issuer.source_group in (case.evidence_a_group, case.evidence_b_group):
             raise gl.vm.UserError("challenge requires an independent source group")
         if challenge_valid_until <= now:
@@ -870,6 +926,7 @@ class EvidenceBoundPolicyGate(gl.Contract):
             "evidence_a_published_at": case.evidence_a_published_at,
             "evidence_a_valid_until": case.evidence_a_valid_until,
             "evidence_a_key_id": issuer_a.key_id,
+            "evidence_a_publisher_uri": issuer_a.publisher_uri,
             "evidence_b_uri": case.evidence_b_uri,
             "evidence_b_hash": case.evidence_b_hash,
             "evidence_b_issuer": case.evidence_b_issuer,
@@ -879,6 +936,7 @@ class EvidenceBoundPolicyGate(gl.Contract):
             "evidence_b_published_at": case.evidence_b_published_at,
             "evidence_b_valid_until": case.evidence_b_valid_until,
             "evidence_b_key_id": issuer_b.key_id,
+            "evidence_b_publisher_uri": issuer_b.publisher_uri,
             "challenge_uri": case.challenge_uri,
             "challenge_hash": case.challenge_hash,
             "challenge_issuer": case.challenge_issuer,
@@ -888,6 +946,7 @@ class EvidenceBoundPolicyGate(gl.Contract):
             "challenge_published_at": case.challenge_published_at,
             "challenge_valid_until": case.challenge_valid_until,
             "challenge_key_id": "" if issuer_c is None else issuer_c.key_id,
+            "challenge_publisher_uri": "" if issuer_c is None else issuer_c.publisher_uri,
         }
 
     def _validate_evidence_ref(self, uri: str, digest: str, issuer_id: str,

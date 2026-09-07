@@ -21,11 +21,11 @@ export C=0x1799625F92fCB2A933C33B96C1C1a25328fFC14F
 export RPC=https://rpc-bradbury.genlayer.com
 
 genlayer write --rpc "$RPC" "$C" register_issuer --args \
-  publisher-a accounting-system https://github.com/Manablaq/evidencebound-policy-gate publisher-a-key-2026
+  publisher-a accounting-system https://raw.githubusercontent.com/Manablaq/evidencebound-policy-gate/main/examples publisher-a-key-2026
 genlayer write --rpc "$RPC" "$C" register_issuer --args \
-  publisher-b delivery-system https://github.com/Manablaq/evidencebound-policy-gate delivery-system-key-2026
+  publisher-b delivery-system https://raw.githubusercontent.com/Manablaq/evidencebound-policy-gate/main/examples delivery-system-key-2026
 genlayer write --rpc "$RPC" "$C" register_issuer --args \
-  publisher-c customer-dispute https://github.com/Manablaq/evidencebound-policy-gate challenge-key-2026
+  publisher-c customer-dispute https://raw.githubusercontent.com/Manablaq/evidencebound-policy-gate/main/examples challenge-key-2026
 ```
 
 ## Open and resolve the case

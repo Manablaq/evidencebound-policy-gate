@@ -29,9 +29,12 @@ registered policy + two independent evidence records + submission
 The contract makes the trust boundary explicit instead of treating a URL or an
 LLM response as authoritative:
 
-- Issuers are allowlisted with a publisher URI, source group, and key identity.
+- Issuers are allowlisted with a safe HTTPS publisher authority, source group, and key identity.
 - Each case pins two evidence URLs, full-body SHA-256 hashes, record IDs,
   versions, issuer IDs, publication times, and expiry times.
+- Each case and challenge URL must match its issuer's exact HTTPS origin and be
+  the registered path or a descendant path. Credentials, query strings,
+  fragments, percent-encoding, ports, and traversal segments are rejected.
 - Each fetched record must carry a non-empty issuer signature artifact and a
   `signed_payload_hash` equal to the pinned full-body hash.
 - The two evidence records must come from different source groups.
@@ -56,11 +59,10 @@ LLM response as authoritative:
 - `set_policy_active(...)`
 
 The owner is the deployment sender. Issuer registration is an explicit trust
-root: the contract binds each case to the registered issuer's source group and
-key identity. The evidence record must repeat those values. Deployments that
-need cryptographic signature verification should place that verifier at the
-issuer/evidence layer and treat this registry as the on-chain allowlist and
-hash/version binding.
+root: the contract binds each case to the registered issuer's source group,
+publisher authority, and key identity. The evidence record must repeat those
+values. This corrected implementation uses enforceable URL authority rules;
+cryptographic signature verification remains an issuer/evidence-layer concern.
 
 ### Case lifecycle
 
@@ -113,13 +115,14 @@ The URL pinned in a case must serve a JSON object containing at least:
 The contract hashes the complete UTF-8 response body for transport integrity,
 and separately hashes the canonical JSON record after removing `signature` and
 `signed_payload_hash` for detached issuer binding. It requires both hashes and
-all identity/version/time fields to match the case snapshot. Use immutable raw
-URLs or commit-pinned records; mutable homepages, dashboards, and API responses
-with live counters are poor evidence sources. The contract binds the record to
-the registered `issuer_key_id` and signed body hash; cryptographic signature
-verification itself must happen in the trusted publisher/evidence service that
-produces the record. This boundary is explicit and auditable rather than being
-presented as on-chain cryptography that is not implemented here.
+all identity/version/time fields to match the case snapshot. The authority rule
+is enforced when a case/challenge is submitted and again inside each
+validator's re-evaluation, so a caller cannot pin one issuer and fetch from an
+impersonating host or ambiguous path. Use immutable raw URLs or commit-pinned
+records; mutable homepages, dashboards, and API responses with live counters
+are poor evidence sources. Cryptographic signature verification itself remains
+outside GenVM because this corrected implementation chooses the reviewer's
+origin/path remedy.
 
 ## Testing and audit
 
