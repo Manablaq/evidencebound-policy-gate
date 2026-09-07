@@ -1,6 +1,6 @@
 # Live Bradbury demo plan
 
-Deployment: `0x50918B2954732002c62D811E111570064123Ee5F`
+Deployment: `0xa719e569C8D3463B061B377cB4C8417dD9b2d8B9`
 Policy ID: `1`  
 Policy digest: `d44a82e0b29678f854ff4d2b9db3490d3dbdcea7916bee2d8759486333da57e0`
 
@@ -21,7 +21,7 @@ has enough Bradbury GEN for the issuer, policy, case, and resolution writes.
 ## Register the three issuers
 
 ```bash
-export C=0x50918B2954732002c62D811E111570064123Ee5F
+export C=0xa719e569C8D3463B061B377cB4C8417dD9b2d8B9
 export RPC=https://rpc-bradbury.genlayer.com
 
 genlayer write --rpc "$RPC" "$C" register_issuer --args \

@@ -7,9 +7,9 @@ profile, invoice, deliverable, or other claim.
 
 ## Bradbury deployment
 
-Final corrected deployment: `0x50918B2954732002c62D811E111570064123Ee5F`
-Deployment transaction: `0x0b386d41f7d01b9093cbae92badc96b23f025cf36c04f3953057c82a81625097`
-Deployed source SHA-256: `38c68f1a09e660b4ac16bc7bde2c170dc345cc663dd02df835104d8d99b8a2a8`
+Final corrected deployment: `0xa719e569C8D3463B061B377cB4C8417dD9b2d8B9`
+Deployment transaction: `0xd233ae136ad3958b159446fc17572c3abbf4ce6c25f66c9ea7f9649232a4ade1`
+Deployed source SHA-256: `74628a637490daa93c5e07585f6c8f96075d97bd17fe5b805ca104028068a229`
 
 The deployment was accepted with `AGREE / FINISHED_WITH_RETURN`. This final
 artifact includes enforceable issuer publisher URL provenance: each issuer is

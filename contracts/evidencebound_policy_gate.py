@@ -270,8 +270,7 @@ def _fetch_record(uri: str, expected_hash: str, expected_issuer: str,
     if not _uri_matches_publisher(uri, publisher_uri):
         return None, _error_result("evidence_publisher_mismatch")
     try:
-        response = gl.nondet.web.get(uri)
-        body = response.body.decode("utf-8", errors="replace")
+        body = str(gl.get_webpage(uri, mode="text"))
     except Exception:
         return None, _error_result("evidence_fetch_failed")
 
@@ -392,7 +391,7 @@ def _evaluate_snapshot(snapshot: dict) -> str:
 
     prompt = _build_prompt(snapshot, record_a, record_b, challenge)
     try:
-        raw = gl.nondet.exec_prompt(prompt, response_format="json")
+        raw = gl.exec_prompt(prompt)
         decision = _normalize_llm_result(raw)
     except Exception:
         decision = "error"
