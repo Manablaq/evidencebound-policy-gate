@@ -19,6 +19,9 @@ Bradbury web and prompt APIs and pins immutable raw fixture response bodies.
 Use the deployment log for the full verification record. Earlier Bradbury
 addresses are historical and must not be submitted.
 
+The previous challenged re-review timeout and the revised validator design are
+documented in [`docs/REVIEW_REMEDIATION.md`](docs/REVIEW_REMEDIATION.md).
+
 ```text
 registered policy + two independent evidence records + submission
         -> validator-verified decision
@@ -43,8 +46,10 @@ LLM response as authoritative:
 - Every validator fetches and checks both records against the pinned snapshot.
 - The semantic result is canonicalized to `allowed`, `denied`, `needs_review`,
   or `error`; confidence and reason are derived from the decision.
-- Validators independently re-run the policy review and compare the exact
-  decision-bearing fields, not free-form explanations.
+- Validators independently re-fetch and verify the snapshot, then validate the
+  leader's stable canonical decision with a compact support/contradiction check;
+  free-form explanations and model-specific confidence are never consensus
+  inputs.
 - A challenge supplies independent counter-evidence and forces a fresh review.
 - Consumers require finalization, consensus binding, freshness, the exact
   policy version/digest, and a confidence threshold.
@@ -69,8 +74,9 @@ cryptographic signature verification remains an issuer/evidence-layer concern.
 ### Case lifecycle
 
 - `open_case(...)` — snapshots the policy and two independent evidence records.
-- `resolve_case(case_id)` — independently fetches, verifies, and reviews the
-  snapshot under `run_nondet_unsafe`.
+- `resolve_case(case_id)` — the leader independently reviews the snapshot under
+  `run_nondet_unsafe`; validators re-fetch the same snapshot and independently
+  validate whether the canonical leader decision is supported.
 - `submit_challenge(...)` — adds independent counter-evidence during the
   challenge window and invalidates the prior decision.
 - `resolve_case(case_id)` — re-runs the challenged case from the new snapshot.
@@ -133,8 +139,8 @@ The test suite checks the source structure and regression-sensitive invariants:
 - no `gl.nondet` call or storage write inside a contract method;
 - complete-body hash pinning and metadata binding;
 - distinct corroborating source groups;
-- independent validator execution;
-- exact decision-bearing consensus comparison;
+- independent validator execution and candidate-support validation;
+- no exact equality requirement for nondeterministic model output;
 - challenge invalidation and re-review;
 - evidence repair and expiry recovery;
 - finalization and exact policy fingerprint requirements; and

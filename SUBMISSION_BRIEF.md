@@ -34,7 +34,9 @@ threshold.
   path binding at case/challenge submission and validator re-evaluation;
 - duplicate-source/record rejection;
 - prompt-injection defense;
-- independent validator re-execution;
+- independent validator re-fetch and candidate-support validation;
+- compact validator output that avoids exact equality of nondeterministic model
+  explanations;
 - canonical `allowed` / `denied` / `needs_review` / `error` result;
 - challenge invalidation and fresh re-review;
 - evidence repair and expiry recovery; and

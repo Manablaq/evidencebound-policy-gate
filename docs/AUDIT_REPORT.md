@@ -54,17 +54,21 @@ boundary, not a claim of asymmetric cryptography inside GenVM.
 
 ### Validator independence — PASS
 
-The leader and validator both execute the same full evaluation snapshot. The
-validator does not merely check JSON shape: it independently fetches evidence,
-reapplies the policy prompt, normalizes the result, and compares the decision,
-confidence, reason code, evidence hashes, challenge hash, and error code.
+The leader and validator both execute against the same immutable snapshot. The
+validator independently re-fetches every record, repeats the publisher,
+metadata, detached-payload, and full-body hash checks, then runs a compact
+support/contradiction prompt against the leader's canonical decision. It does
+not require two nondeterministic explanations or confidence fields to be
+byte-for-byte identical.
 
-### Equivalence and exact consequential output — PASS
+### Stable consequential output — PASS
 
 Free-form LLM explanations are not stored as consensus inputs. The canonical
 decision is one of `allowed`, `denied`, `needs_review`, or `error`; confidence and
-reason are deterministically derived. Invalid/malformed model output becomes an
-explicit error rather than a permissive allow or an ambiguous fallback.
+reason are deterministically derived. Validators approve only a valid candidate
+that their independent evidence review supports. Invalid/malformed model output
+becomes an explicit error rather than a permissive allow or an ambiguous
+fallback.
 
 ### Prompt-injection resistance — PASS
 
@@ -87,12 +91,15 @@ invalidates the prior decision, and changes the case to `CHALLENGED`. Re-review
 uses the updated snapshot. There is no profile-update/reactivation path that can
 silently bypass an old finding.
 
-### Timeout, failed fetch, and expiry recovery — PASS
+### Timeout, failed fetch, and expiry recovery — PASS WITH REVISED VALIDATOR PATH
 
-Evidence or model failures resolve to a canonical `ERROR` state. The requester
-or owner can repair evidence while the case is live, resetting the lifecycle to
-`OPEN`. An expired, non-finalized case can be marked `RECOVERED`; no assets are
-held by this primitive, so there is no permanently locked escrow balance.
+The validator path avoids the previous exact-equality failure mode: it uses a
+small boolean support result instead of requiring an independent model to
+reproduce the leader's complete decision tuple. Evidence or model failures
+remain canonical and recoverable. The requester or owner can repair evidence
+while the case is live, resetting the lifecycle to `OPEN`. An expired,
+non-finalized case can be marked `RECOVERED`; no assets are held by this
+primitive, so there is no permanently locked escrow balance.
 
 ### Deployment parity — PASS WITH SERIALIZATION NOTE
 
@@ -110,8 +117,7 @@ PYTHONPYCACHEPREFIX=/private/tmp/evidencebound-pycache \
 python3 -m unittest discover -s tests -v
 ```
 
-Current result: 17 tests pass, including deployment parity, detached-payload
-hash math, and adversarial publisher URL binding cases. Bradbury deployment
-passed with `AGREE / FINISHED_WITH_RETURN`. Remaining live checks on the final
-address are issuer registration, evidence retrieval, non-deterministic
-resolution, challenge/re-review, finalization, and Explorer source verification.
+Current result before the revision: 17 tests pass, including deployment parity,
+detached-payload hash math, and adversarial publisher URL binding cases. The
+previous Bradbury address is historical; the revised source must be deployed
+and its new address and live re-review receipt recorded before submission.
