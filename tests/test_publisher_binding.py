@@ -40,6 +40,9 @@ class PublisherBindingTests(unittest.TestCase):
             self.PUBLISHER + "/evidence_a.json#latest",
             "https://publisher:secret@raw.githubusercontent.com/record",
             "https://raw.githubusercontent.com/%4d/an-evidence-record",
+            "https://rаw.githubusercontent.com/Manablaq/evidencebound-policy-gate/main/examples/evidence_a.json",
+            "https://-raw.githubusercontent.com/record",
+            "https://raw.githubusercontent.com-/record",
         ):
             self.assertFalse(uri_matches_publisher(uri, self.PUBLISHER), uri)
 

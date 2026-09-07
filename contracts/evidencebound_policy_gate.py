@@ -233,8 +233,10 @@ def _safe_https_parts(uri: str):
         path = remainder[slash:]
     if authority == "" or ":" in authority:
         return None
+    if authority.startswith((".", "-")) or authority.endswith((".", "-")) or ".." in authority:
+        return None
     for character in authority:
-        if not (character.isalnum() or character in (".", "-")):
+        if not (("a" <= character <= "z") or ("A" <= character <= "Z") or ("0" <= character <= "9") or character in (".", "-")):
             return None
     if not path.startswith("/") or "//" in path:
         return None

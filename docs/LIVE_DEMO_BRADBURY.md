@@ -1,6 +1,6 @@
 # Live Bradbury demo plan
 
-Deployment: `0x1799625F92fCB2A933C33B96C1C1a25328fFC14F`  
+Deployment: `0x50918B2954732002c62D811E111570064123Ee5F`
 Policy ID: `1`  
 Policy digest: `d44a82e0b29678f854ff4d2b9db3490d3dbdcea7916bee2d8759486333da57e0`
 
@@ -14,18 +14,22 @@ Raw fixture base URL:
 The live transactions and read-back results are recorded in
 `DEPLOYMENT_LOG_BRADBURY.md`.
 
+The commands below target the final reviewer-correction deployment. They have
+not been executed on this fresh address yet; run them only after the deployer
+has enough Bradbury GEN for the issuer, policy, case, and resolution writes.
+
 ## Register the three issuers
 
 ```bash
-export C=0x1799625F92fCB2A933C33B96C1C1a25328fFC14F
+export C=0x50918B2954732002c62D811E111570064123Ee5F
 export RPC=https://rpc-bradbury.genlayer.com
 
 genlayer write --rpc "$RPC" "$C" register_issuer --args \
-  publisher-a accounting-system https://raw.githubusercontent.com/Manablaq/evidencebound-policy-gate/main/examples publisher-a-key-2026
+  publisher-a accounting-system https://raw.githubusercontent.com/Manablaq/evidencebound-policy-gate/main/examples/evidence_a.json publisher-a-key-2026
 genlayer write --rpc "$RPC" "$C" register_issuer --args \
-  publisher-b delivery-system https://raw.githubusercontent.com/Manablaq/evidencebound-policy-gate/main/examples delivery-system-key-2026
+  publisher-b delivery-system https://raw.githubusercontent.com/Manablaq/evidencebound-policy-gate/main/examples/evidence_b.json delivery-system-key-2026
 genlayer write --rpc "$RPC" "$C" register_issuer --args \
-  publisher-c customer-dispute https://raw.githubusercontent.com/Manablaq/evidencebound-policy-gate/main/examples challenge-key-2026
+  publisher-c customer-dispute https://raw.githubusercontent.com/Manablaq/evidencebound-policy-gate/main/examples/challenge.json challenge-key-2026
 ```
 
 ## Open and resolve the case

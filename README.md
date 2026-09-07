@@ -7,15 +7,16 @@ profile, invoice, deliverable, or other claim.
 
 ## Bradbury deployment
 
-Corrected deployment: `0x1799625F92fCB2A933C33B96C1C1a25328fFC14F`  
-Deployment transaction: `0xc7f89e2699ab86a32d724218f2bb884985d56b8e412973d16ea521d70ba0094e`  
-Policy smoke-test transaction: `0x74c8bdce881a73b97289153389718d4dbae2ee1e5ba223cc7d505ce6727a6219`
+Final corrected deployment: `0x50918B2954732002c62D811E111570064123Ee5F`
+Deployment transaction: `0x0b386d41f7d01b9093cbae92badc96b23f025cf36c04f3953057c82a81625097`
+Deployed source SHA-256: `38c68f1a09e660b4ac16bc7bde2c170dc345cc663dd02df835104d8d99b8a2a8`
 
-The deployment was accepted with `AGREE / FINISHED_WITH_RETURN`; schema
-retrieval succeeded, and policy ID `1` was registered successfully. Use the
-deployment log for the full verification record. The earlier Bradbury address
-`0x8714C7e5148D9C7599C27699338114F0c5a05B6B` is superseded and must not be
-submitted.
+The deployment was accepted with `AGREE / FINISHED_WITH_RETURN`. This final
+artifact includes enforceable issuer publisher URL provenance: each issuer is
+registered to a safe HTTPS origin/path, and every evidence URL is checked at
+submission and again during validator re-evaluation. Use the deployment log for
+the full verification record. Earlier Bradbury addresses are historical and
+must not be submitted.
 
 ```text
 registered policy + two independent evidence records + submission

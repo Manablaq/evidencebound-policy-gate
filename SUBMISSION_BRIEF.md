@@ -30,6 +30,8 @@ threshold.
 
 - full response-body hashes and metadata binding;
 - issuer allowlist, key identity, source groups, and detached signature artifact;
+- enforceable issuer publisher URL provenance using safe HTTPS origin and exact
+  path binding at case/challenge submission and validator re-evaluation;
 - duplicate-source/record rejection;
 - prompt-injection defense;
 - independent validator re-execution;
@@ -41,9 +43,10 @@ threshold.
 ## Links to attach after deployment
 
 - repository: `https://github.com/Manablaq/evidencebound-policy-gate`;
-- contract address: `0x1799625F92fCB2A933C33B96C1C1a25328fFC14F`;
-- deployment transaction: `0xc7f89e2699ab86a32d724218f2bb884985d56b8e412973d16ea521d70ba0094e`;
-- Explorer/source verification: `https://explorer-bradbury.genlayer.com/`;
-- live Bradbury lifecycle: `case_id=1`, first resolution allowed, challenged, then re-resolved;
+- contract address: `0x50918B2954732002c62D811E111570064123Ee5F`;
+- deployment transaction: `0x0b386d41f7d01b9093cbae92badc96b23f025cf36c04f3953057c82a81625097`;
+- deployed source SHA-256: `38c68f1a09e660b4ac16bc7bde2c170dc345cc663dd02df835104d8d99b8a2a8`;
+- Explorer/source verification: `https://explorer-bradbury.genlayer.com/address/0x50918B2954732002c62D811E111570064123Ee5F`;
+- live Bradbury lifecycle: run the commands in `docs/LIVE_DEMO_BRADBURY.md` after funding the deployer;
 - audit report: `docs/AUDIT_REPORT.md`;
 - evidence schema: `docs/EVIDENCE_RECORD_SPEC.md`.

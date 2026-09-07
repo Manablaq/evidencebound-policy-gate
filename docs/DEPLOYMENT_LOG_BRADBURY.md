@@ -6,7 +6,23 @@ Chain ID: 4221
 RPC: `https://rpc-bradbury.genlayer.com`  
 Deployer: `0x1f87Ae197af539253978d435aD45cCf28Fb95024` (`worker`)
 
-## Corrected deployment
+## Final reviewer-correction deployment
+
+- Contract: `0x50918B2954732002c62D811E111570064123Ee5F`
+- Transaction: `0x0b386d41f7d01b9093cbae92badc96b23f025cf36c04f3953057c82a81625097`
+- Receipt: `ACCEPTED / AGREE / FINISHED_WITH_RETURN`
+- Deployed source SHA-256: `38c68f1a09e660b4ac16bc7bde2c170dc345cc663dd02df835104d8d99b8a2a8`
+- Source copies: `contracts/evidencebound_policy_gate.py` and
+  `studio_bradbury/evidencebound_policy_gate.py` are byte-identical.
+- Reviewer correction: issuer publisher URLs are validated as safe HTTPS
+  origin/path authorities at issuer registration, case/challenge submission,
+  and validator re-evaluation before any web fetch.
+- Live setup status: no issuer, policy, or case writes have been sent to this
+  final address yet; the worker balance was reserved for deployment and is not
+  enough to claim a fresh end-to-end lifecycle. The runbook is ready once the
+  deployer is funded.
+
+## Historical pre-final deployment — do not submit
 
 - Contract: `0x1799625F92fCB2A933C33B96C1C1a25328fFC14F`
 - Transaction: `0xc7f89e2699ab86a32d724218f2bb884985d56b8e412973d16ea521d70ba0094e`
@@ -16,7 +32,7 @@ Deployer: `0x1f87Ae197af539253978d435aD45cCf28Fb95024` (`worker`)
 - Deployed source: normalized content matches the audited source; the CLI
   response adds two trailing blank lines during source serialization.
 
-## Live smoke test
+## Historical live smoke test — do not submit as final evidence
 
 Registered policy ID `1`:
 

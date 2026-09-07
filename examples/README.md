@@ -11,9 +11,12 @@ committed:
 | `challenge.json` | `ccdf83a459136d6cc25e23c676ab2931cbb582c1f11a43b3204aadf2e5d7083d` | `customer-dispute` |
 
 The `signature` values are demo artifacts for the fixture. Before a production
-submission, replace them with real detached signatures produced and verified by
+deployment, replace them with real detached signatures produced and verified by
 the registered issuer service. The contract binds the issuer key ID and signed
-payload hash but does not implement asymmetric cryptography itself.
+payload hash, and additionally enforces that each fetched URL matches the
+registered issuer's safe HTTPS origin and exact path. This demo uses the URL
+authority/path remedy requested by the reviewer; it does not claim asymmetric
+cryptography inside GenVM.
 
 The timestamps are a one-day demo window generated on 2026-09-06. Regenerate
 fresh timestamps and hashes if these fixtures are published after the window.
