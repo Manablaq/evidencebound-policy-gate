@@ -7,17 +7,19 @@ profile, invoice, deliverable, or other claim.
 
 ## Bradbury deployment
 
-Final corrected deployment: `0xa3c8291d30372e9990b6d7a4f22dd94b9d8abf97`
-Deployment transaction: `0xac7bb9697293951baf76c02c5f2cb822058afaf87d4ea5847a30941045f6f5ce`
-Deployed source SHA-256: `8f6f168802d13b0d251b2f7e7b23266141996907460d8008e08dc480998fcee3`
+Current corrected deployment: `0xde282ff85c1a626dbf5ca5bc0ce1def6a8a5483f`
+Deployment transaction: `0x3428bd5a718df449156665fbb82ed01b2feb67d69af746969abc0ee110261fcf`
+Deployed source SHA-256: `1cfbc4eac2ac62bfa785e376de2e47f652cf60ac9f470c919d26c7fc450cac9f`
 
-The deployment was accepted with `AGREE / FINISHED_WITH_RETURN`. This final
+The deployment was accepted with `AGREE / FINISHED_WITH_RETURN`. This revised
 artifact includes enforceable issuer publisher URL provenance: each issuer is
 registered to a safe HTTPS origin/path, and every evidence URL is checked at
 submission and again during validator re-evaluation. It uses the documented
 Bradbury web and prompt APIs and pins immutable raw fixture response bodies.
 Use the deployment log for the full verification record. Earlier Bradbury
-addresses are historical and must not be submitted.
+addresses are historical and must not be submitted. Fresh initial resolution
+verification is still processing on the new address; challenged re-review has
+not yet been claimed as successful.
 
 The previous challenged re-review timeout and the revised validator design are
 documented in [`docs/REVIEW_REMEDIATION.md`](docs/REVIEW_REMEDIATION.md).

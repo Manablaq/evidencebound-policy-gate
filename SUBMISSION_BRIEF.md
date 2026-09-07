@@ -45,10 +45,10 @@ threshold.
 ## Links to attach after deployment
 
 - repository: `https://github.com/Manablaq/evidencebound-policy-gate`;
-- contract address: `0xa3c8291d30372e9990b6d7a4f22dd94b9d8abf97`;
-- deployment transaction: `0xac7bb9697293951baf76c02c5f2cb822058afaf87d4ea5847a30941045f6f5ce`;
-- deployed source SHA-256: `8f6f168802d13b0d251b2f7e7b23266141996907460d8008e08dc480998fcee3`;
-- Explorer/source verification: `https://explorer-bradbury.genlayer.com/address/0xa3c8291d30372e9990b6d7a4f22dd94b9d8abf97`;
+- contract address: `0xDe282Ff85c1A626dBF5Ca5Bc0CE1DeF6a8a5483F`;
+- deployment transaction: `0x3428bd5a718df449156665fbb82ed01b2feb67d69af746969abc0ee110261fcf`;
+- deployed source SHA-256: `1cfbc4eac2ac62bfa785e376de2e47f652cf60ac9f470c919d26c7fc450cac9f`;
+- Explorer/source verification: `https://explorer-bradbury.genlayer.com/address/0xDe282Ff85c1A626dBF5Ca5Bc0CE1DeF6a8a5483F`;
 - live Bradbury lifecycle: run the commands in `docs/LIVE_DEMO_BRADBURY.md` after funding the deployer;
 - audit report: `docs/AUDIT_REPORT.md`;
 - evidence schema: `docs/EVIDENCE_RECORD_SPEC.md`.

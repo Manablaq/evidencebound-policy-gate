@@ -50,5 +50,9 @@ the Portal submission is updated.
 - `contracts/evidencebound_policy_gate.py` and
   `studio_bradbury/evidencebound_policy_gate.py`: byte-identical.
 - Revised source SHA-256: `1cfbc4eac2ac62bfa785e376de2e47f652cf60ac9f470c919d26c7fc450cac9f`.
-- Bradbury deployment: pending RPC availability; no new address is claimed by
-  this document until deployment and live re-review succeed.
+- Revised Bradbury deployment accepted: `0xDe282Ff85c1A626dBF5Ca5Bc0CE1DeF6a8a5483F`.
+- Deployment transaction: `0x3428bd5a718df449156665fbb82ed01b2feb67d69af746969abc0ee110261fcf`.
+- Fresh initial resolution transaction is still processing:
+  `0xc8f2de04b8e850fc1ff7d780acbd52e1f6ce01dfefada5f017524aeff28605a2`.
+- No challenged re-review success is claimed until a fresh accepted receipt and
+  read-back are recorded.

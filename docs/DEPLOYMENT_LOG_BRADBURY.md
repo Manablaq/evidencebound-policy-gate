@@ -6,6 +6,26 @@ Chain ID: 4221
 RPC: `https://rpc-bradbury.genlayer.com`  
 Deployer: `0x1f87Ae197af539253978d435aD45cCf28Fb95024` (`worker`)
 
+## Current stable-validator remediation deployment
+
+- Contract: `0xDe282Ff85c1A626dBF5Ca5Bc0CE1DeF6a8a5483F`
+- Transaction: `0x3428bd5a718df449156665fbb82ed01b2feb67d69af746969abc0ee110261fcf`
+- Receipt: `ACCEPTED / AGREE / FINISHED_WITH_RETURN`
+- Deployed source SHA-256: `1cfbc4eac2ac62bfa785e376de2e47f652cf60ac9f470c919d26c7fc450cac9f`
+- Source and Studio copies are byte-identical.
+- Schema verification: passed; `resolve_case` and `register_issuer` are present.
+- Fresh setup transactions all returned `ACCEPTED / AGREE / FINISHED_WITH_RETURN`:
+  - issuer `publisher-a`: `0xc3fac391c5216aac4d4ea666be79bb66a4358b8816b429e167284e3eb7c4321c`
+  - issuer `publisher-b`: `0xc40f63be924bba0eb9c9a3365a353813f2884486368a1a4d85ff13fe6fe345e6`
+  - issuer `publisher-c`: `0x545cd54beb2370a2edcd0f98cbec771fd4092aa3b224df620960b4089045f0f6`
+  - policy `1`: `0x5f696cb04b5479709121297775cf45f39c3b380785c13e4af7e6002ccd598e79`
+  - `open_case(1)`: `0x25a049b450ee001ccd5313358c589ad4b17e0154a8c8a4e9e38f6c2603b10006`
+- Fresh initial resolution: `0xc8f2de04b8e850fc1ff7d780acbd52e1f6ce01dfefada5f017524aeff28605a2`.
+  At the latest check it remained `COMMITTING` with 4/5 commits and 0/5
+  reveals; no success or timeout is claimed yet.
+- The challenged re-review has not been started on this new address because
+  the initial resolution must first reach an accepted state.
+
 ## Final reviewer-correction deployment
 
 - Contract: `0xa3c8291d30372e9990b6d7a4f22dd94b9d8abf97`

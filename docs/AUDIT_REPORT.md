@@ -3,9 +3,9 @@
 Audit date: 2026-09-06  
 Audited source: `contracts/evidencebound_policy_gate.py`  
 Deployment copy: `studio_bradbury/evidencebound_policy_gate.py`  
-Final corrected Bradbury deployment: `0xa3c8291d30372e9990b6d7a4f22dd94b9d8abf97`
-Deployment transaction: `0xac7bb9697293951baf76c02c5f2cb822058afaf87d4ea5847a30941045f6f5ce`
-Deployed source SHA-256: `8f6f168802d13b0d251b2f7e7b23266141996907460d8008e08dc480998fcee3`
+Current corrected Bradbury deployment: `0xDe282Ff85c1A626dBF5Ca5Bc0CE1DeF6a8a5483F`
+Deployment transaction: `0x3428bd5a718df449156665fbb82ed01b2feb67d69af746969abc0ee110261fcf`
+Deployed source SHA-256: `1cfbc4eac2ac62bfa785e376de2e47f652cf60ac9f470c919d26c7fc450cac9f`
 
 ## Executive result
 
@@ -13,11 +13,11 @@ The source passes the local static, AST, and adversarial invariant suite. The
 deployment copy is byte-for-byte identical to the audited source. No finding is
 currently rated critical or high in the contract logic.
 
-The final corrected artifact has been accepted on Bradbury and the deployment
-source hash is recorded above. The source includes enforceable publisher URL
-provenance and uses the documented Bradbury web/prompt APIs. Immutable raw
-fixtures were fetched and hash-verified in the live first resolution; the
-challenge invalidation is also recorded in the deployment log.
+The revised artifact has been accepted on Bradbury and the deployment source
+hash is recorded above. The source includes enforceable publisher URL
+provenance and uses the documented Bradbury web/prompt APIs. The fresh live
+setup transactions have succeeded; the new semantic resolution is still
+processing and challenged re-review is not yet claimed as successful.
 
 ## What the primitive does
 
@@ -106,7 +106,7 @@ primitive, so there is no permanently locked escrow balance.
 The Studio deployment file is byte-for-byte checked against the audited source.
 Bradbury's `genlayer code` response contains two extra trailing blank lines,
 but its normalized source content matches the audited file. The submitted
-address must be the final corrected deployment listed above; all earlier
+address must be the current corrected deployment listed above; all earlier
 deployments are historical and must not be submitted.
 
 ## Local verification
@@ -117,7 +117,8 @@ PYTHONPYCACHEPREFIX=/private/tmp/evidencebound-pycache \
 python3 -m unittest discover -s tests -v
 ```
 
-Current result before the revision: 17 tests pass, including deployment parity,
-detached-payload hash math, and adversarial publisher URL binding cases. The
-previous Bradbury address is historical; the revised source must be deployed
-and its new address and live re-review receipt recorded before submission.
+Current result: 17 tests pass, including deployment parity, detached-payload
+hash math, and adversarial publisher URL binding cases. The revised source is
+deployed and source-verified on Bradbury. Its fresh initial resolution is still
+processing; challenged re-review and finalization remain unclaimed until their
+receipts succeed.

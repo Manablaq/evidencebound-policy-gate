@@ -1,6 +1,6 @@
 # Live Bradbury demo plan
 
-Deployment: `0xa3c8291d30372e9990b6d7a4f22dd94b9d8abf97`
+Deployment: `0xDe282Ff85c1A626dBF5Ca5Bc0CE1DeF6a8a5483F`
 Policy ID: `1`  
 Policy digest: `d44a82e0b29678f854ff4d2b9db3490d3dbdcea7916bee2d8759486333da57e0`
 
@@ -19,7 +19,7 @@ The commands below target the final reviewer-correction deployment.
 ## Register the three issuers
 
 ```bash
-export C=0xa3c8291d30372e9990b6d7a4f22dd94b9d8abf97
+export C=0xDe282Ff85c1A626dBF5Ca5Bc0CE1DeF6a8a5483F
 export RPC=https://rpc-bradbury.genlayer.com
 
 genlayer write --rpc "$RPC" "$C" register_issuer --args \
