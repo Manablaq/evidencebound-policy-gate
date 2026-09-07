@@ -28,7 +28,10 @@ Deployer: `0x1f87Ae197af539253978d435aD45cCf28Fb95024` (`worker`)
   read-back immediately after acceptance: `CHALLENGED / UNKNOWN`,
   `consensus_bound=false`, evidence revision `2`.
 - The first challenged re-review attempt reached `LEADER_TIMEOUT` without a
-  state change; a retry remains pending as `0xb186de18a7e2bf37c3ee3a55c3e7af37339a7ee9c2f29c57fffe3b1d537285c5`.
+  state change. The first retry was later canceled without a state change
+  (`0xb186de18a7e2bf37c3ee3a55c3e7af37339a7ee9c2f29c57fffe3b1d537285c5`).
+  A second retry is currently pending as
+  `0x1e41ae0dea292d570187fd1475ee7460d1bbbd49fd40c2f360f9ad72424da5e8`.
   No finalization or challenged re-review success is claimed until that
   transaction receives an execution result.
 
