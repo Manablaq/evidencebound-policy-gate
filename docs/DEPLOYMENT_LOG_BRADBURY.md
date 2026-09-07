@@ -1,6 +1,6 @@
 # Bradbury deployment log
 
-Date: 2026-09-06  
+Date: 2026-09-07
 Network: GenLayer Bradbury Testnet  
 Chain ID: 4221  
 RPC: `https://rpc-bradbury.genlayer.com`  
@@ -8,19 +8,51 @@ Deployer: `0x1f87Ae197af539253978d435aD45cCf28Fb95024` (`worker`)
 
 ## Final reviewer-correction deployment
 
-- Contract: `0xa719e569C8D3463B061B377cB4C8417dD9b2d8B9`
-- Transaction: `0xd233ae136ad3958b159446fc17572c3abbf4ce6c25f66c9ea7f9649232a4ade1`
+- Contract: `0xa3c8291d30372e9990b6d7a4f22dd94b9d8abf97`
+- Transaction: `0xac7bb9697293951baf76c02c5f2cb822058afaf87d4ea5847a30941045f6f5ce`
 - Receipt: `ACCEPTED / AGREE / FINISHED_WITH_RETURN`
-- Deployed source SHA-256: `74628a637490daa93c5e07585f6c8f96075d97bd17fe5b805ca104028068a229`
+- Deployed source SHA-256: `8f6f168802d13b0d251b2f7e7b23266141996907460d8008e08dc480998fcee3`
 - Source copies: `contracts/evidencebound_policy_gate.py` and
   `studio_bradbury/evidencebound_policy_gate.py` are byte-identical.
 - Reviewer correction: issuer publisher URLs are validated as safe HTTPS
   origin/path authorities at issuer registration, case/challenge submission,
   and validator re-evaluation before any web fetch.
-- Live setup status: no issuer, policy, or case writes have been sent to this
-  final address yet; the worker balance was reserved for deployment and is not
-  enough to claim a fresh end-to-end lifecycle. The runbook is ready once the
-  deployer is funded.
+- Web compatibility: the contract uses the documented `gl.nondet.web.get()`
+  response body API and `gl.nondet.exec_prompt(..., response_format="json")`.
+- Live lifecycle: canonical issuer registrations, policy registration, and
+  `open_case(1)` all returned `ACCEPTED / AGREE / FINISHED_WITH_RETURN`.
+- `resolve_case(1)` transaction: `0x806aceec791f017f1b5a8d110278769380cc1cee004b3d385fd67cd43df05971`;
+  read-back: `RESOLVED / ALLOWED`, confidence `9500`,
+  `consensus_bound=true`, resolution count `1`.
+- `submit_challenge(1)` transaction: `0xd52076051bad5b85222af6d900ba9059eea9c75801ca85934c74e3542c45da0b`;
+  read-back immediately after acceptance: `CHALLENGED / UNKNOWN`,
+  `consensus_bound=false`, evidence revision `2`.
+- The first challenged re-review attempt reached `LEADER_TIMEOUT` without a
+  state change; a retry remains pending as `0xb186de18a7e2bf37c3ee3a55c3e7af37339a7ee9c2f29c57fffe3b1d537285c5`.
+  No finalization or challenged re-review success is claimed until that
+  transaction receives an execution result.
+
+Live setup transactions on this final address:
+
+- issuer `publisher-a`: `0x582961c224ede0778232b4dcdcee83d29db28dc29c2d64d89bfb2045576febcf`
+- issuer `publisher-b`: `0x641cdab3d1dbdf8cbd6500e582f28af641e1be3c9c1f7eaa80b54c9d302fedb6`
+- issuer `publisher-c`: `0xd29cf9fad079dd12c30f48a2dd7115027044eb1af37210a621b73a0599bcff7b`
+- policy `1`: `0x4fc29a8c1910f155da7fefbd3340d936349e0bbd60b3d3f3f68299845aa50269`
+- `open_case(1)`: `0x6fdc28b428c67bf6b774654106e8c293db73fb81e7ad546524dbae8b56a63d64`
+
+Pinned raw fixture hashes:
+
+- `evidence_a.json`: `127c5e938e2beb01d608e4c3969aae694112d21f1bdb53cb068e86f3d25b8cd2`
+- `evidence_b.json`: `acefdceade22183c67ad13a12740deb49103d9adbdfb36e70cfe71237feedc42`
+- `challenge.json`: `680df56b2e3d38df26a0b9d49f80ad3870a5e72e1d206a32aa38935871aa67a6`
+
+## Historical runtime-compatible deployment — do not submit
+
+- Contract: `0x1c9F3F3e5eB28681A56F416980425ef06482a295`
+- Transaction: `0x7fd6628b474176a10b5b88875c2275a41f7e300d4527784660bbc8d640234909`
+- Reason superseded: the final source was updated to the documented
+  `gl.nondet.web.get()` / `gl.nondet.exec_prompt()` API and the live evidence
+  transport was changed from dynamic API envelopes to immutable raw files.
 
 ## Historical pre-final deployment — do not submit
 

@@ -25,6 +25,7 @@ from genlayer import *
 
 from dataclasses import dataclass
 from datetime import datetime, timezone
+import base64
 import hashlib
 import json
 
@@ -207,6 +208,21 @@ def _parse_json(text: str):
     return None
 
 
+def _decode_record_body(body: str):
+    """Decode either a direct record or a GitHub Contents API envelope."""
+    parsed = _parse_json(body)
+    if parsed is None:
+        return None
+    if parsed.get("encoding") != "base64" or not isinstance(parsed.get("content"), str):
+        return parsed
+    try:
+        encoded = "".join(parsed["content"].split())
+        record_body = base64.b64decode(encoded).decode("utf-8")
+        return _parse_json(record_body)
+    except Exception:
+        return None
+
+
 def _signed_payload_hash(record: dict) -> str:
     """Hash the canonical payload, excluding detached signature fields."""
     payload = dict(record)
@@ -270,7 +286,8 @@ def _fetch_record(uri: str, expected_hash: str, expected_issuer: str,
     if not _uri_matches_publisher(uri, publisher_uri):
         return None, _error_result("evidence_publisher_mismatch")
     try:
-        body = str(gl.get_webpage(uri, mode="text"))
+        response = gl.nondet.web.get(uri)
+        body = response.body.decode("utf-8")
     except Exception:
         return None, _error_result("evidence_fetch_failed")
 
@@ -280,7 +297,7 @@ def _fetch_record(uri: str, expected_hash: str, expected_issuer: str,
         # deliberately not returned because it could differ between nodes.
         return None, _error_result("evidence_hash_mismatch", expected_hash)
 
-    record = _parse_json(body)
+    record = _decode_record_body(body)
     if record is None:
         return None, _error_result("evidence_not_json", expected_hash)
 
@@ -391,7 +408,7 @@ def _evaluate_snapshot(snapshot: dict) -> str:
 
     prompt = _build_prompt(snapshot, record_a, record_b, challenge)
     try:
-        raw = gl.exec_prompt(prompt)
+        raw = gl.nondet.exec_prompt(prompt, response_format="json")
         decision = _normalize_llm_result(raw)
     except Exception:
         decision = "error"

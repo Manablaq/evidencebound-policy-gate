@@ -3,9 +3,9 @@
 Audit date: 2026-09-06  
 Audited source: `contracts/evidencebound_policy_gate.py`  
 Deployment copy: `studio_bradbury/evidencebound_policy_gate.py`  
-Final corrected Bradbury deployment: `0xa719e569C8D3463B061B377cB4C8417dD9b2d8B9`
-Deployment transaction: `0xd233ae136ad3958b159446fc17572c3abbf4ce6c25f66c9ea7f9649232a4ade1`
-Deployed source SHA-256: `74628a637490daa93c5e07585f6c8f96075d97bd17fe5b805ca104028068a229`
+Final corrected Bradbury deployment: `0xa3c8291d30372e9990b6d7a4f22dd94b9d8abf97`
+Deployment transaction: `0xac7bb9697293951baf76c02c5f2cb822058afaf87d4ea5847a30941045f6f5ce`
+Deployed source SHA-256: `8f6f168802d13b0d251b2f7e7b23266141996907460d8008e08dc480998fcee3`
 
 ## Executive result
 
@@ -15,8 +15,9 @@ currently rated critical or high in the contract logic.
 
 The final corrected artifact has been accepted on Bradbury and the deployment
 source hash is recorded above. The source includes enforceable publisher URL
-provenance. The full non-deterministic case path on this new address is pending
-funding and live setup transactions; no unverified live result is claimed here.
+provenance and uses the documented Bradbury web/prompt APIs. Immutable raw
+fixtures were fetched and hash-verified in the live first resolution; the
+challenge invalidation is also recorded in the deployment log.
 
 ## What the primitive does
 

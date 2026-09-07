@@ -7,16 +7,17 @@ profile, invoice, deliverable, or other claim.
 
 ## Bradbury deployment
 
-Final corrected deployment: `0xa719e569C8D3463B061B377cB4C8417dD9b2d8B9`
-Deployment transaction: `0xd233ae136ad3958b159446fc17572c3abbf4ce6c25f66c9ea7f9649232a4ade1`
-Deployed source SHA-256: `74628a637490daa93c5e07585f6c8f96075d97bd17fe5b805ca104028068a229`
+Final corrected deployment: `0xa3c8291d30372e9990b6d7a4f22dd94b9d8abf97`
+Deployment transaction: `0xac7bb9697293951baf76c02c5f2cb822058afaf87d4ea5847a30941045f6f5ce`
+Deployed source SHA-256: `8f6f168802d13b0d251b2f7e7b23266141996907460d8008e08dc480998fcee3`
 
 The deployment was accepted with `AGREE / FINISHED_WITH_RETURN`. This final
 artifact includes enforceable issuer publisher URL provenance: each issuer is
 registered to a safe HTTPS origin/path, and every evidence URL is checked at
-submission and again during validator re-evaluation. Use the deployment log for
-the full verification record. Earlier Bradbury addresses are historical and
-must not be submitted.
+submission and again during validator re-evaluation. It uses the documented
+Bradbury web and prompt APIs and pins immutable raw fixture response bodies.
+Use the deployment log for the full verification record. Earlier Bradbury
+addresses are historical and must not be submitted.
 
 ```text
 registered policy + two independent evidence records + submission

@@ -1,6 +1,6 @@
 # Live Bradbury demo plan
 
-Deployment: `0xa719e569C8D3463B061B377cB4C8417dD9b2d8B9`
+Deployment: `0xa3c8291d30372e9990b6d7a4f22dd94b9d8abf97`
 Policy ID: `1`  
 Policy digest: `d44a82e0b29678f854ff4d2b9db3490d3dbdcea7916bee2d8759486333da57e0`
 
@@ -8,28 +8,26 @@ Policy digest: `d44a82e0b29678f854ff4d2b9db3490d3dbdcea7916bee2d8759486333da57e0
 
 Published repository: `https://github.com/Manablaq/evidencebound-policy-gate`
 
-Raw fixture base URL:
+Immutable raw fixture base URL:
 `https://raw.githubusercontent.com/Manablaq/evidencebound-policy-gate/main/examples`
 
 The live transactions and read-back results are recorded in
 `DEPLOYMENT_LOG_BRADBURY.md`.
 
-The commands below target the final reviewer-correction deployment. They have
-not been executed on this fresh address yet; run them only after the deployer
-has enough Bradbury GEN for the issuer, policy, case, and resolution writes.
+The commands below target the final reviewer-correction deployment.
 
 ## Register the three issuers
 
 ```bash
-export C=0xa719e569C8D3463B061B377cB4C8417dD9b2d8B9
+export C=0xa3c8291d30372e9990b6d7a4f22dd94b9d8abf97
 export RPC=https://rpc-bradbury.genlayer.com
 
 genlayer write --rpc "$RPC" "$C" register_issuer --args \
-  publisher-a accounting-system https://raw.githubusercontent.com/Manablaq/evidencebound-policy-gate/main/examples/evidence_a.json publisher-a-key-2026
+  publisher-a accounting-system https://raw.githubusercontent.com/Manablaq/evidencebound-policy-gate/main/examples publisher-a-key-2026
 genlayer write --rpc "$RPC" "$C" register_issuer --args \
-  publisher-b delivery-system https://raw.githubusercontent.com/Manablaq/evidencebound-policy-gate/main/examples/evidence_b.json delivery-system-key-2026
+  publisher-b delivery-system https://raw.githubusercontent.com/Manablaq/evidencebound-policy-gate/main/examples delivery-system-key-2026
 genlayer write --rpc "$RPC" "$C" register_issuer --args \
-  publisher-c customer-dispute https://raw.githubusercontent.com/Manablaq/evidencebound-policy-gate/main/examples/challenge.json challenge-key-2026
+  publisher-c customer-dispute https://raw.githubusercontent.com/Manablaq/evidencebound-policy-gate/main/examples challenge-key-2026
 ```
 
 ## Open and resolve the case
