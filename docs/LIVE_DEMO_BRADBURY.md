@@ -40,11 +40,11 @@ genlayer write --rpc "$RPC" "$C" open_case --args \
   "Invoice inv-2026-001 entitlement request" \
   "Bradbury live demo with two independent records" \
   "https://raw.githubusercontent.com/Manablaq/evidencebound-policy-gate/main/examples/evidence_a.json" \
-  a95497ac94db8baaf13a705909c1f65f1582a673afba48432dd2f82efaa3febc \
-  publisher-a invoice-2026-001-a 1 1788685000 1788771400 \
+  127c5e938e2beb01d608e4c3969aae694112d21f1bdb53cb068e86f3d25b8cd2 \
+  publisher-a invoice-2026-001-a 1 1788798000 1789402800 \
   "https://raw.githubusercontent.com/Manablaq/evidencebound-policy-gate/main/examples/evidence_b.json" \
-  80f7f1f1376310119aae8080663b24c14dd7665d420eaf89f9716cdbfe6a0beb \
-  publisher-b invoice-2026-001-b 1 1788685000 1788771400 \
+  acefdceade22183c67ad13a12740deb49103d9adbdfb36e70cfe71237feedc42 \
+  publisher-b invoice-2026-001-b 1 1788798000 1789402800 \
   604800
 
 genlayer write --rpc "$RPC" "$C" resolve_case --args 1
@@ -59,8 +59,8 @@ Expected first resolution: `status=RESOLVED`, `decision=ALLOWED`,
 ```bash
 genlayer write --rpc "$RPC" "$C" submit_challenge --args \
   1 "https://raw.githubusercontent.com/Manablaq/evidencebound-policy-gate/main/examples/challenge.json" \
-  ccdf83a459136d6cc25e23c676ab2931cbb582c1f11a43b3204aadf2e5d7083d \
-  publisher-c invoice-2026-001-c 1 1788685000 1788771400 \
+  680df56b2e3d38df26a0b9d49f80ad3870a5e72e1d206a32aa38935871aa67a6 \
+  publisher-c invoice-2026-001-c 1 1788798000 1789402800 \
   "Customer disputes delivery completion; re-review required."
 
 genlayer write --rpc "$RPC" "$C" resolve_case --args 1

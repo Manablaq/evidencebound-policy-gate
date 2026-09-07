@@ -6,9 +6,9 @@ committed:
 
 | File | Body SHA-256 | Source group |
 |---|---|---|
-| `evidence_a.json` | `a95497ac94db8baaf13a705909c1f65f1582a673afba48432dd2f82efaa3febc` | `accounting-system` |
-| `evidence_b.json` | `80f7f1f1376310119aae8080663b24c14dd7665d420eaf89f9716cdbfe6a0beb` | `delivery-system` |
-| `challenge.json` | `ccdf83a459136d6cc25e23c676ab2931cbb582c1f11a43b3204aadf2e5d7083d` | `customer-dispute` |
+| `evidence_a.json` | `127c5e938e2beb01d608e4c3969aae694112d21f1bdb53cb068e86f3d25b8cd2` | `accounting-system` |
+| `evidence_b.json` | `acefdceade22183c67ad13a12740deb49103d9adbdfb36e70cfe71237feedc42` | `delivery-system` |
+| `challenge.json` | `680df56b2e3d38df26a0b9d49f80ad3870a5e72e1d206a32aa38935871aa67a6` | `customer-dispute` |
 
 The `signature` values are demo artifacts for the fixture. Before a production
 deployment, replace them with real detached signatures produced and verified by
@@ -18,5 +18,5 @@ registered issuer's safe HTTPS origin and exact path. This demo uses the URL
 authority/path remedy requested by the reviewer; it does not claim asymmetric
 cryptography inside GenVM.
 
-The timestamps are a one-day demo window generated on 2026-09-06. Regenerate
+The timestamps are a seven-day demo window generated on 2026-09-07. Regenerate
 fresh timestamps and hashes if these fixtures are published after the window.
