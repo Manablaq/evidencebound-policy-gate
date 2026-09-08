@@ -1,5 +1,7 @@
 export const CONTRACT_ADDRESS = "0x783D0Ac74991408A12ED6ccC2977411984990d28";
 export const RPC_URL = "https://rpc-bradbury.genlayer.com";
+export const BRADBURY_CHAIN_ID = 4221;
+export const BRADBURY_CHAIN_ID_HEX = "0x107d";
 export const EXPLORER_URL = `https://explorer-bradbury.genlayer.com/address/${CONTRACT_ADDRESS}`;
 export const REPOSITORY_URL = "https://github.com/Manablaq/evidencebound-policy-gate";
 export const FIXTURE_BASE_URL = "https://raw.githubusercontent.com/Manablaq/evidencebound-policy-gate/main/examples";
@@ -42,6 +44,54 @@ export const CASE_FIELDS = [
 ] as const;
 
 export type ChainCase = Record<(typeof CASE_FIELDS)[number], unknown>;
+
+export type EvidenceDraft = {
+  uri: string;
+  hash: string;
+  issuer: string;
+  recordId: string;
+  version: string;
+  publishedAt: string;
+  validUntil: string;
+};
+
+export type CaseDraft = {
+  policyId: string;
+  subject: string;
+  submittedContent: string;
+  context: string;
+  evidenceA: EvidenceDraft;
+  evidenceB: EvidenceDraft;
+  ttlSeconds: string;
+};
+
+export function demoCaseDraft(): CaseDraft {
+  return {
+    policyId: String(DEMO.policyId),
+    subject: DEMO.subject,
+    submittedContent: DEMO.submittedContent,
+    context: DEMO.context,
+    evidenceA: {
+      uri: DEMO.evidenceAUri,
+      hash: DEMO.evidenceAHash,
+      issuer: DEMO.evidenceAIssuer,
+      recordId: DEMO.evidenceARecordId,
+      version: "1",
+      publishedAt: String(DEMO.timestamp),
+      validUntil: String(DEMO.validUntil),
+    },
+    evidenceB: {
+      uri: DEMO.evidenceBUri,
+      hash: DEMO.evidenceBHash,
+      issuer: DEMO.evidenceBIssuer,
+      recordId: DEMO.evidenceBRecordId,
+      version: "1",
+      publishedAt: String(DEMO.timestamp),
+      validUntil: String(DEMO.validUntil),
+    },
+    ttlSeconds: "604800",
+  };
+}
 
 export async function getReadClient() {
   const [{ createClient }, { testnetBradbury }] = await Promise.all([

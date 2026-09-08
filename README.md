@@ -173,6 +173,13 @@ cards, lifecycle visibility, wallet connection, and non-blocking transaction
 feedback. After a Bradbury action is accepted, the workspace re-reads the case
 in place instead of requiring a page reload.
 
+The workspace supports a complete operator flow: load any known case ID, create
+a case from editable policy/evidence metadata, submit independent challenge
+evidence, resolve, finalize after the challenge window, repair failed evidence,
+and recover expired cases. New-review transactions return a Bradbury transaction
+identifier; after acceptance, enter the resulting case ID in the selector to
+inspect that case because the current contract does not expose a case-list view.
+
 The wallet control is session-aware: after connecting, open the account button
 to view the full address, copy it, or disconnect it from this app. A browser
 wallet account connection normally does not require a signature; a signature is
@@ -202,3 +209,11 @@ npm audit --omit=dev --audit-level=high
 The main UI is in `components/evidencebound-app.tsx`; the browser-facing
 GenLayer adapter is in `lib/contract.ts`. The SDK is dynamically imported so
 public page rendering remains independent of wallet availability.
+
+Before signing, the UI checks for chain ID `4221` (Bradbury) and offers the
+standard wallet switch/add-network request. It keeps the same lifecycle action
+disabled while that action is still processing in consensus, while unrelated
+work remains available. A read failure switches the workspace to a clearly
+marked read-only fallback and disables state-changing forms. Client errors are
+handled by `app/error.tsx`, and the initial load has a dedicated `app/loading.tsx`
+state.
