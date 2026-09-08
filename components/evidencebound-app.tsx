@@ -132,6 +132,9 @@ export default function EvidenceBoundApp() {
     document.querySelectorAll(".reveal").forEach((element) => observer.observe(element));
     const handleAccounts = (...args: unknown[]) => setWallet(typeof args[0] === "object" && Array.isArray(args[0]) ? String(args[0][0] ?? "") : "");
     window.ethereum?.on?.("accountsChanged", handleAccounts);
+    void window.ethereum?.request({ method: "eth_accounts" }).then((accounts) => {
+      if (Array.isArray(accounts)) setWallet(String(accounts[0] ?? ""));
+    }).catch(() => undefined);
     const closeWalletMenu = (event: MouseEvent) => {
       const target = event.target;
       if (!(target instanceof Element) || !target.closest(".wallet-wrap")) setWalletMenuOpen(false);
