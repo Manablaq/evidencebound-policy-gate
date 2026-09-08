@@ -163,3 +163,33 @@ python3 -m unittest discover -s tests -v
 Before Portal submission, deploy the exact file from `contracts/`, verify its
 source in Explorer, record the deployment transaction and contract address,
 and submit those links together. Never submit a historical deployment link.
+
+## Frontend workspace
+
+The repository now includes a production-ready Next.js frontend for the
+verified Bradbury deployment. It has a public landing page, a live case review
+workspace, light/dark themes, responsive navigation, evidence provenance
+cards, lifecycle visibility, wallet connection, and non-blocking transaction
+feedback. After a Bradbury action is accepted, the workspace re-reads the case
+in place instead of requiring a page reload.
+
+Run locally:
+
+```bash
+npm install
+npm run dev
+```
+
+Then open `http://localhost:3000`. The frontend uses public Bradbury reads by
+default. Wallet actions require a compatible browser wallet on Bradbury and
+are intentionally opt-in. Production checks are:
+
+```bash
+npm run lint
+npm run build
+npm audit --omit=dev --audit-level=high
+```
+
+The main UI is in `components/evidencebound-app.tsx`; the browser-facing
+GenLayer adapter is in `lib/contract.ts`. The SDK is dynamically imported so
+public page rendering remains independent of wallet availability.
