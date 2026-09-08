@@ -37,13 +37,12 @@ class EvidenceBoundAuditTests(unittest.TestCase):
         self.assertIn("corroboration requires distinct record ids", SOURCE)
         self.assertIn("challenge requires an independent source group", SOURCE)
 
-    def test_validator_reexecutes_and_validates_stable_candidate_semantics(self):
+    def test_validator_callback_is_deterministic_and_validates_stable_candidate(self):
         self.assertIn("gl.vm.run_nondet_unsafe(leader_fn, validator_fn)", SOURCE)
-        self.assertIn("_load_snapshot_records(snapshot)", SOURCE)
-        self.assertIn("_independently_validates_candidate(snapshot, leader_data)", SOURCE)
-        self.assertIn('return json.dumps(error, sort_keys=True)', SOURCE)
-        self.assertIn('return isinstance(raw, dict) and isinstance(raw.get("valid"), bool)', SOURCE)
-        self.assertNotIn("_consensus_key", SOURCE)
+        self.assertIn("_validator_accepts_candidate(snapshot, leader_data)", SOURCE)
+        self.assertIn("_snapshot_bindings_valid(snapshot)", SOURCE)
+        self.assertIn('decision == "error" and str(value.get("error_code", "")).strip() != ""', SOURCE)
+        self.assertNotIn("gl.nondet", ast.get_source_segment(SOURCE, self.contract) or "")
         self.assertIn("confidence\": _confidence_for(decision)", SOURCE)
 
     def test_consumer_predicates_require_exact_finalized_binding(self):

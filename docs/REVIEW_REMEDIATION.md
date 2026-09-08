@@ -24,35 +24,45 @@ normal nondeterministic model variation. The public receipt proves the validator
 committee timed out or rejected the callback, but does not expose each
 validator's private model output.
 
-## Remediation
+## First remediation attempt and remaining issue
+
+The first remediation replaced exact LLM-output equality with a compact
+candidate-support prompt. That still failed because it called `gl.nondet` from
+inside the validator callback. Bradbury correctly recorded deterministic
+violations, so that intermediate deployment is also historical.
+
+## Final remediation
 
 The revised source keeps the security boundary intact:
 
 1. The leader still fetches and validates every pinned record and produces one
    canonical decision.
-2. Each validator still re-fetches every record and repeats URL-authority,
-   metadata, detached-payload, and full-body hash checks.
-3. Each validator independently checks whether the leader's stable canonical
-   decision is supported or contradicted by the verified evidence.
-4. Validators return only a compact boolean support result; free-form model
-   explanations, confidence, and reason text are not compared across nodes.
+2. The deterministic validator callback independently re-checks the snapshot's
+   issuer/path bindings and every consequential canonical result field.
+3. The validator callback makes no web or LLM call, avoiding GenLayer's
+   deterministic-violation rule.
+4. Free-form model explanations, confidence, and reason text are not used as
+   validator inputs beyond their deterministic canonical derivation.
 5. Canonical errors remain safe and recoverable, and can never become an allow
    decision.
 
-This removes the exact-equality failure mode while retaining independent
-validator review and all issuer-provenance controls. The revised source must be
-deployed to a new Bradbury address and pass a fresh challenged re-review before
-the Portal submission is updated.
+This removes the nondeterministic-validator and exact-equality failure modes
+while retaining independent deterministic validator review and all
+issuer-provenance controls. The final source must be deployed to a new Bradbury
+address and pass a fresh challenged re-review before the Portal submission is
+updated.
 
 ## Verification
 
 - Local regression suite: 17 tests passing.
 - `contracts/evidencebound_policy_gate.py` and
   `studio_bradbury/evidencebound_policy_gate.py`: byte-identical.
-- Revised source SHA-256: `1cfbc4eac2ac62bfa785e376de2e47f652cf60ac9f470c919d26c7fc450cac9f`.
-- Revised Bradbury deployment accepted: `0xDe282Ff85c1A626dBF5Ca5Bc0CE1DeF6a8a5483F`.
-- Deployment transaction: `0x3428bd5a718df449156665fbb82ed01b2feb67d69af746969abc0ee110261fcf`.
-- Fresh initial resolution transaction is still processing:
-  `0xc8f2de04b8e850fc1ff7d780acbd52e1f6ce01dfefada5f017524aeff28605a2`.
-- No challenged re-review success is claimed until a fresh accepted receipt and
-  read-back are recorded.
+- Final source SHA-256: `9f8f2f77f91edb40e03cc0ed45a96a16109d6f2bd7260dfb2fcbe9b44fb6ca10`.
+- The intermediate Bradbury deployment at
+  `0xDe282Ff85c1A626dBF5Ca5Bc0CE1DeF6a8a5483F` is historical because its
+  validator callback still made nondeterministic calls.
+- Final remediation deployment: `0x783D0Ac74991408A12ED6ccC2977411984990d28`.
+- The fresh accepted initial resolution, challenge, challenged re-review, and
+  read-back all passed. The re-review returned `NEEDS_REVIEW` with
+  `consensus_bound=true`; this is the expected policy result for the challenge
+  fixture, not a validator failure.

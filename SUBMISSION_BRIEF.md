@@ -34,9 +34,10 @@ threshold.
   path binding at case/challenge submission and validator re-evaluation;
 - duplicate-source/record rejection;
 - prompt-injection defense;
-- independent validator re-fetch and candidate-support validation;
-- compact validator output that avoids exact equality of nondeterministic model
-  explanations;
+- independent deterministic validator re-check of issuer/path bindings and
+  every consequential canonical result field;
+- no web or LLM call inside the validator callback, avoiding deterministic
+  violations while preserving the leader's nondeterministic evidence review;
 - canonical `allowed` / `denied` / `needs_review` / `error` result;
 - challenge invalidation and fresh re-review;
 - evidence repair and expiry recovery; and
@@ -45,10 +46,10 @@ threshold.
 ## Links to attach after deployment
 
 - repository: `https://github.com/Manablaq/evidencebound-policy-gate`;
-- contract address: `0xDe282Ff85c1A626dBF5Ca5Bc0CE1DeF6a8a5483F`;
-- deployment transaction: `0x3428bd5a718df449156665fbb82ed01b2feb67d69af746969abc0ee110261fcf`;
-- deployed source SHA-256: `1cfbc4eac2ac62bfa785e376de2e47f652cf60ac9f470c919d26c7fc450cac9f`;
-- Explorer/source verification: `https://explorer-bradbury.genlayer.com/address/0xDe282Ff85c1A626dBF5Ca5Bc0CE1DeF6a8a5483F`;
-- live Bradbury lifecycle: run the commands in `docs/LIVE_DEMO_BRADBURY.md` after funding the deployer;
+- contract address: `0x783D0Ac74991408A12ED6ccC2977411984990d28`;
+- deployment transaction: `0x6eeb61056e626601aab40b8dea76d778462230c7add7353f36d518fd29cd2984`;
+- deployed source SHA-256: `9f8f2f77f91edb40e03cc0ed45a96a16109d6f2bd7260dfb2fcbe9b44fb6ca10`;
+- Explorer: `https://explorer-bradbury.genlayer.com/address/0x783D0Ac74991408A12ED6ccC2977411984990d28`;
+- live Bradbury lifecycle: accepted setup, initial resolution, challenge, and challenged re-review are recorded in `docs/DEPLOYMENT_LOG_BRADBURY.md`;
 - audit report: `docs/AUDIT_REPORT.md`;
 - evidence schema: `docs/EVIDENCE_RECORD_SPEC.md`.

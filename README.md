@@ -7,9 +7,9 @@ profile, invoice, deliverable, or other claim.
 
 ## Bradbury deployment
 
-Current corrected deployment: `0xde282ff85c1a626dbf5ca5bc0ce1def6a8a5483f`
-Deployment transaction: `0x3428bd5a718df449156665fbb82ed01b2feb67d69af746969abc0ee110261fcf`
-Deployed source SHA-256: `1cfbc4eac2ac62bfa785e376de2e47f652cf60ac9f470c919d26c7fc450cac9f`
+Current corrected deployment: `0x783D0Ac74991408A12ED6ccC2977411984990d28`
+Deployment transaction: `0x6eeb61056e626601aab40b8dea76d778462230c7add7353f36d518fd29cd2984`
+Deployed source SHA-256: `9f8f2f77f91edb40e03cc0ed45a96a16109d6f2bd7260dfb2fcbe9b44fb6ca10`
 
 The deployment was accepted with `AGREE / FINISHED_WITH_RETURN`. This revised
 artifact includes enforceable issuer publisher URL provenance: each issuer is
@@ -18,8 +18,9 @@ submission and again during validator re-evaluation. It uses the documented
 Bradbury web and prompt APIs and pins immutable raw fixture response bodies.
 Use the deployment log for the full verification record. Earlier Bradbury
 addresses are historical and must not be submitted. Fresh initial resolution
-verification is still processing on the new address; challenged re-review has
-not yet been claimed as successful.
+and challenged re-review both passed on the new address with five agreeing
+validators and `FINISHED_WITH_RETURN` execution. Finalization remains deferred
+until the challenge window closes.
 
 The previous challenged re-review timeout and the revised validator design are
 documented in [`docs/REVIEW_REMEDIATION.md`](docs/REVIEW_REMEDIATION.md).
@@ -45,13 +46,15 @@ LLM response as authoritative:
 - Each fetched record must carry a non-empty issuer signature artifact and a
   `signed_payload_hash` equal to the pinned full-body hash.
 - The two evidence records must come from different source groups.
-- Every validator fetches and checks both records against the pinned snapshot.
+- The leader fetches and checks both records against the pinned snapshot;
+  validators deterministically re-check the snapshot bindings and canonical
+  result without web or LLM calls inside the validator callback.
 - The semantic result is canonicalized to `allowed`, `denied`, `needs_review`,
   or `error`; confidence and reason are derived from the decision.
-- Validators independently re-fetch and verify the snapshot, then validate the
-  leader's stable canonical decision with a compact support/contradiction check;
-  free-form explanations and model-specific confidence are never consensus
-  inputs.
+- Validators independently re-check the snapshot bindings and every
+  consequential field of the leader's stable canonical decision through the
+  deterministic validator callback; free-form explanations and model-specific
+  confidence are never consensus inputs.
 - A challenge supplies independent counter-evidence and forces a fresh review.
 - Consumers require finalization, consensus binding, freshness, the exact
   policy version/digest, and a confidence threshold.
@@ -76,9 +79,10 @@ cryptographic signature verification remains an issuer/evidence-layer concern.
 ### Case lifecycle
 
 - `open_case(...)` — snapshots the policy and two independent evidence records.
-- `resolve_case(case_id)` — the leader independently reviews the snapshot under
-  `run_nondet_unsafe`; validators re-fetch the same snapshot and independently
-  validate whether the canonical leader decision is supported.
+- `resolve_case(case_id)` — the leader reviews the snapshot under
+  `run_nondet_unsafe`; validators deterministically re-check the snapshot
+  binding and canonical result. The validator callback performs no web or LLM
+  calls, as required by the GenLayer execution model.
 - `submit_challenge(...)` — adds independent counter-evidence during the
   challenge window and invalidates the prior decision.
 - `resolve_case(case_id)` — re-runs the challenged case from the new snapshot.
@@ -141,8 +145,8 @@ The test suite checks the source structure and regression-sensitive invariants:
 - no `gl.nondet` call or storage write inside a contract method;
 - complete-body hash pinning and metadata binding;
 - distinct corroborating source groups;
-- independent validator execution and candidate-support validation;
-- no exact equality requirement for nondeterministic model output;
+- independent deterministic validator execution and candidate validation;
+- no nondeterministic calls inside the validator callback;
 - challenge invalidation and re-review;
 - evidence repair and expiry recovery;
 - finalization and exact policy fingerprint requirements; and

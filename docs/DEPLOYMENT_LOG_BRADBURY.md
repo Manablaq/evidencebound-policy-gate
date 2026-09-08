@@ -1,12 +1,42 @@
 # Bradbury deployment log
 
-Date: 2026-09-07
+Date: 2026-09-08
 Network: GenLayer Bradbury Testnet  
 Chain ID: 4221  
 RPC: `https://rpc-bradbury.genlayer.com`  
 Deployer: `0x1f87Ae197af539253978d435aD45cCf28Fb95024` (`worker`)
 
-## Current stable-validator remediation deployment
+## Current final deterministic-validator remediation deployment
+
+- Contract: `0x783D0Ac74991408A12ED6ccC2977411984990d28`
+- Transaction: `0x6eeb61056e626601aab40b8dea76d778462230c7add7353f36d518fd29cd2984`
+- Receipt: `ACCEPTED / AGREE / FINISHED_WITH_RETURN`
+- Deployed source SHA-256: `9f8f2f77f91edb40e03cc0ed45a96a16109d6f2bd7260dfb2fcbe9b44fb6ca10`
+- Source and Studio copies were byte-identical before deployment.
+- The validator callback contains no `gl.nondet` call; it deterministically
+  re-checks issuer/path bindings and the stable canonical candidate.
+- Fresh setup transactions all returned `ACCEPTED / AGREE / FINISHED_WITH_RETURN`:
+  - issuer `publisher-a`: `0x4f81fe30c7f0884201bf92f6a6dc4dcf4288e48a622a6db21df21791133f6328`
+  - issuer `publisher-b`: `0xb278d9196fdd1d9e1af771aa2f555b7979c0e14e92bc0814fd69a5a62811c4d3`
+  - issuer `publisher-c`: `0xaa11c1e267a46416e4ce175d24af787bea2372d7478f40e8072b8a92ab68684e`
+  - policy `1`: `0x1a8804881e7b183452b88ac2754e57030b2bf329f50e40d2fd45188a04b90a26`
+  - `open_case(1)`: `0x558640a94a9d555bf6968fee1fb8bf6119fcbab34d11ce9c15183bdc6ac6926f`
+- Fresh initial `resolve_case(1)`: `0x51f551fb4e841fb5df06edd60b34523abd04697d0c1ae5b6c3428339c33d49ce`.
+  Receipt: `ACCEPTED / AGREE / FINISHED_WITH_RETURN`; five validator votes
+  were `AGREE`; read-back was `RESOLVED / ALLOWED`, confidence `9500`,
+  `consensus_bound=true`, resolution count `1`.
+- `submit_challenge(1)`: `0x7b918415cd3074cbda27b2f71414a621d73aecedddda03865b377532e0d0193c`.
+  Receipt: `ACCEPTED / AGREE / FINISHED_WITH_RETURN`; read-back was
+  `CHALLENGED / UNKNOWN`, `consensus_bound=false`, evidence revision `2`.
+- Challenged `resolve_case(1)`: `0x201f36f999683eaf0e75446408a85dae3d71f74865ff54cd0d1675a94514554a`.
+  Receipt: `ACCEPTED / AGREE / FINISHED_WITH_RETURN`; five validator votes
+  were `AGREE`; read-back was `RESOLVED / NEEDS_REVIEW`, confidence `6000`,
+  `consensus_bound=true`, resolution count `2`, and the challenge hash was
+  bound in `resolved_challenge_hash`.
+- Finalization was intentionally not submitted because the challenge window is
+  still open. Consumers correctly remain blocked until finalization.
+
+## Historical first stable-validator remediation deployment — do not submit
 
 - Contract: `0xDe282Ff85c1A626dBF5Ca5Bc0CE1DeF6a8a5483F`
 - Transaction: `0x3428bd5a718df449156665fbb82ed01b2feb67d69af746969abc0ee110261fcf`

@@ -1,6 +1,6 @@
 # Live Bradbury demo plan
 
-Deployment: `0xDe282Ff85c1A626dBF5Ca5Bc0CE1DeF6a8a5483F`
+Deployment: `0x783D0Ac74991408A12ED6ccC2977411984990d28`
 Policy ID: `1`  
 Policy digest: `d44a82e0b29678f854ff4d2b9db3490d3dbdcea7916bee2d8759486333da57e0`
 
@@ -14,12 +14,14 @@ Immutable raw fixture base URL:
 The live transactions and read-back results are recorded in
 `DEPLOYMENT_LOG_BRADBURY.md`.
 
-The commands below target the final reviewer-correction deployment.
+The commands below target the final reviewer-correction deployment. They have
+been executed successfully on Bradbury; the accepted transaction IDs and
+read-back states are recorded in `DEPLOYMENT_LOG_BRADBURY.md`.
 
 ## Register the three issuers
 
 ```bash
-export C=0xDe282Ff85c1A626dBF5Ca5Bc0CE1DeF6a8a5483F
+export C=0x783D0Ac74991408A12ED6ccC2977411984990d28
 export RPC=https://rpc-bradbury.genlayer.com
 
 genlayer write --rpc "$RPC" "$C" register_issuer --args \
@@ -50,7 +52,8 @@ genlayer call --rpc "$RPC" "$C" get_case --args 1
 ```
 
 Expected first resolution: `status=RESOLVED`, `decision=ALLOWED`,
-`consensus_bound=true`, and `resolution_count=1`.
+`consensus_bound=true`, and `resolution_count=1`. The live run returned those
+values with five `AGREE` validator votes.
 
 ## Challenge and re-review
 
@@ -66,5 +69,9 @@ genlayer call --rpc "$RPC" "$C" get_case --args 1
 ```
 
 The challenge must clear the previous decision and increment the evidence
-revision. Finalize only after the challenge window closes and verify that the
-consumer predicate stays false until finalization.
+revision. The live run returned `status=CHALLENGED`, `decision=UNKNOWN`, and
+`consensus_bound=false`, then the challenged re-review returned
+`status=RESOLVED`, `decision=NEEDS_REVIEW`, `consensus_bound=true`, and
+`resolution_count=2` with five `AGREE` validator votes. Finalize only after the
+challenge window closes and verify that the consumer predicate stays false
+until finalization.

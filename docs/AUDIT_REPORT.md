@@ -1,11 +1,11 @@
 # EvidenceBound Policy Gate audit report
 
-Audit date: 2026-09-06  
+Audit date: 2026-09-08
 Audited source: `contracts/evidencebound_policy_gate.py`  
 Deployment copy: `studio_bradbury/evidencebound_policy_gate.py`  
-Current corrected Bradbury deployment: `0xDe282Ff85c1A626dBF5Ca5Bc0CE1DeF6a8a5483F`
-Deployment transaction: `0x3428bd5a718df449156665fbb82ed01b2feb67d69af746969abc0ee110261fcf`
-Deployed source SHA-256: `1cfbc4eac2ac62bfa785e376de2e47f652cf60ac9f470c919d26c7fc450cac9f`
+Current corrected Bradbury deployment: `0x783D0Ac74991408A12ED6ccC2977411984990d28`
+Deployment transaction: `0x6eeb61056e626601aab40b8dea76d778462230c7add7353f36d518fd29cd2984`
+Deployed source SHA-256: `9f8f2f77f91edb40e03cc0ed45a96a16109d6f2bd7260dfb2fcbe9b44fb6ca10`
 
 ## Executive result
 
@@ -15,19 +15,20 @@ currently rated critical or high in the contract logic.
 
 The revised artifact has been accepted on Bradbury and the deployment source
 hash is recorded above. The source includes enforceable publisher URL
-provenance and uses the documented Bradbury web/prompt APIs. The fresh live
-setup transactions have succeeded; the new semantic resolution is still
-processing and challenged re-review is not yet claimed as successful.
+provenance and uses the documented Bradbury web/prompt APIs. A fresh live
+initial resolution and challenged re-review both completed with five agreeing
+validators and `FINISHED_WITH_RETURN` execution.
 
 ## What the primitive does
 
 It is a reusable policy gate for claims such as an invoice, entitlement,
 deliverable, moderation result, or profile decision. A case snapshots an
-immutable policy and two independently sourced evidence records. GenLayer
-validators fetch and verify both records, independently run the semantic policy
-review, and agree on a canonical decision. A challenge can add independent
-counter-evidence and forces a fresh review. Only a finalized, unexpired,
-consensus-bound decision with the exact policy fingerprint can be consumed.
+immutable policy and two independently sourced evidence records. The leader
+fetches and verifies the records and runs semantic policy review; validators
+independently perform deterministic binding and canonical-result checks before
+agreeing on the candidate. A challenge can add independent counter-evidence and
+forces a fresh review. Only a finalized, unexpired, consensus-bound decision
+with the exact policy fingerprint can be consumed.
 
 ## Findings and controls
 
@@ -54,12 +55,12 @@ boundary, not a claim of asymmetric cryptography inside GenVM.
 
 ### Validator independence — PASS
 
-The leader and validator both execute against the same immutable snapshot. The
-validator independently re-fetches every record, repeats the publisher,
-metadata, detached-payload, and full-body hash checks, then runs a compact
-support/contradiction prompt against the leader's canonical decision. It does
-not require two nondeterministic explanations or confidence fields to be
-byte-for-byte identical.
+The leader executes the nondeterministic web retrieval and semantic review
+against an immutable snapshot. The validator callback is deterministic: it
+re-checks the snapshot's publisher bindings, source-group separation, duplicate
+guards, and every consequential field of the leader's canonical result. It makes
+no web or LLM call and does not require two nondeterministic explanations or
+confidence fields to be byte-for-byte identical.
 
 ### Stable consequential output — PASS
 
@@ -93,21 +94,23 @@ silently bypass an old finding.
 
 ### Timeout, failed fetch, and expiry recovery — PASS WITH REVISED VALIDATOR PATH
 
-The validator path avoids the previous exact-equality failure mode: it uses a
-small boolean support result instead of requiring an independent model to
-reproduce the leader's complete decision tuple. Evidence or model failures
-remain canonical and recoverable. The requester or owner can repair evidence
-while the case is live, resetting the lifecycle to `OPEN`. An expired,
-non-finalized case can be marked `RECOVERED`; no assets are held by this
-primitive, so there is no permanently locked escrow balance.
+The validator path avoids both the previous exact-equality failure mode and the
+later nondeterministic-callback failure: the leader performs web/LLM work once,
+while the callback only returns the deterministic validity of the stable
+candidate. Evidence or model failures remain canonical and recoverable. The
+requester or owner can repair evidence while the case is live, resetting the
+lifecycle to `OPEN`. An expired, non-finalized case can be marked `RECOVERED`;
+no assets are held by this primitive, so there is no permanently locked escrow
+balance.
 
 ### Deployment parity — PASS WITH SERIALIZATION NOTE
 
 The Studio deployment file is byte-for-byte checked against the audited source.
-Bradbury's `genlayer code` response contains two extra trailing blank lines,
-but its normalized source content matches the audited file. The submitted
-address must be the current corrected deployment listed above; all earlier
-deployments are historical and must not be submitted.
+The deployment transaction was created directly from that exact audited file,
+whose SHA-256 is recorded above; the Bradbury CLI's `genlayer code` method is
+Studio-only, so the explorer address is the public source-verification link.
+The submitted address must be the current corrected deployment listed above;
+all earlier deployments are historical and must not be submitted.
 
 ## Local verification
 
@@ -118,7 +121,9 @@ python3 -m unittest discover -s tests -v
 ```
 
 Current result: 17 tests pass, including deployment parity, detached-payload
-hash math, and adversarial publisher URL binding cases. The revised source is
-deployed and source-verified on Bradbury. Its fresh initial resolution is still
-processing; challenged re-review and finalization remain unclaimed until their
-receipts succeed.
+hash math, and adversarial publisher URL binding cases. The exact tested source
+was deployed to the address listed above; deployment, fresh initial resolution,
+challenge, and challenged re-review were all accepted with five agreeing
+validators. The final challenged decision is `NEEDS_REVIEW` with
+`consensus_bound=true`; finalization remains deferred until the recorded
+challenge window closes.
