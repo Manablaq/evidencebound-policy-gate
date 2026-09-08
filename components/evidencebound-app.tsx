@@ -317,13 +317,35 @@ export default function EvidenceBoundApp() {
     setWalletOnBradbury(true);
   }
 
+  async function findLatestCaseId(startId: string) {
+    const client = await getReadClient();
+    let latest = asDraftNumber(startId, "Case ID");
+    for (let offset = 1; offset <= 20; offset += 1) {
+      const candidate = latest + 1n;
+      try {
+        await client.readContract({ address: CONTRACT_ADDRESS, functionName: "get_case", args: [candidate] });
+        latest = candidate;
+      } catch {
+        break;
+      }
+    }
+    return String(latest);
+  }
+
   async function monitorTransaction(hash: string, label: string, targetCaseId: string, functionName: string) {
     try {
       const receipt = await (await getReadClient()).waitForTransactionReceipt({ hash, status: "ACCEPTED", retries: 120, interval: 5000 });
       setTx({ hash, label, status: String(receipt?.txExecutionResultName ?? "Accepted") });
       setPendingAction((current) => current?.hash === hash ? null : current);
       if (functionName === "open_case") {
-        setNotice({ kind: "success", text: "New review accepted by Bradbury. Enter its case ID above to load the newly created case." });
+        try {
+          const latestCaseId = await findLatestCaseId(caseId);
+          setCaseId(latestCaseId);
+          setNotice({ kind: "success", text: `New review accepted by Bradbury. Showing case ${latestCaseId} now.` });
+          window.setTimeout(() => void readState(latestCaseId), 800);
+        } catch {
+          setNotice({ kind: "success", text: "New review accepted by Bradbury. Use the case selector to load the new case if it is not visible yet." });
+        }
       } else {
         window.setTimeout(() => void readState(targetCaseId), 800);
       }
