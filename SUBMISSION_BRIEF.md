@@ -14,9 +14,9 @@ decision that downstream contracts can safely consume.
 
 The contract uses GenLayer's non-deterministic web retrieval and semantic
 adjudication where ordinary deterministic contracts cannot interpret real-world
-evidence. Validators independently fetch the evidence and reapply the policy;
-they agree on exact decision-bearing fields rather than trusting a leader's
-free-form answer.
+evidence. The leader fetches and evaluates the evidence; validators
+deterministically re-check the issuer/path bindings and exact decision-bearing
+fields rather than trusting a leader's free-form answer.
 
 ## What is reusable
 

@@ -48,8 +48,8 @@ The revised source keeps the security boundary intact:
 
 This removes the nondeterministic-validator and exact-equality failure modes
 while retaining independent deterministic validator review and all
-issuer-provenance controls. The final source must be deployed to a new Bradbury
-address and pass a fresh challenged re-review before the Portal submission is
+issuer-provenance controls. The final source is deployed at a new Bradbury
+address and passed a fresh challenged re-review before the Portal submission is
 updated.
 
 ## Verification
