@@ -114,6 +114,8 @@ export default function EvidenceBoundApp() {
   const [isReading, setIsReading] = useState(false);
   const [readOnly, setReadOnly] = useState(false);
   const [wallet, setWallet] = useState("");
+  const [walletMenuOpen, setWalletMenuOpen] = useState(false);
+  const [copiedAddress, setCopiedAddress] = useState(false);
   const [notice, setNotice] = useState<Notice>({ kind: "info", text: "Public reads are available. Connect a Bradbury wallet only when you want to submit an action." });
   const [tx, setTx] = useState<{ hash: string; label: string; status: string } | null>(null);
   const [isBusy, setIsBusy] = useState(false);
@@ -130,9 +132,15 @@ export default function EvidenceBoundApp() {
     document.querySelectorAll(".reveal").forEach((element) => observer.observe(element));
     const handleAccounts = (...args: unknown[]) => setWallet(typeof args[0] === "object" && Array.isArray(args[0]) ? String(args[0][0] ?? "") : "");
     window.ethereum?.on?.("accountsChanged", handleAccounts);
+    const closeWalletMenu = (event: MouseEvent) => {
+      const target = event.target;
+      if (!(target instanceof Element) || !target.closest(".wallet-wrap")) setWalletMenuOpen(false);
+    };
+    document.addEventListener("click", closeWalletMenu);
     return () => {
       observer.disconnect();
       window.ethereum?.removeListener?.("accountsChanged", handleAccounts);
+      document.removeEventListener("click", closeWalletMenu);
     };
   }, []);
 
@@ -177,10 +185,30 @@ export default function EvidenceBoundApp() {
     try {
       const accounts = await window.ethereum.request({ method: "eth_requestAccounts" }) as string[];
       setWallet(accounts[0] ?? "");
-      setNotice({ kind: "success", text: "Wallet connected. Writes will target the verified Bradbury contract." });
+      setWalletMenuOpen(false);
+      setNotice({ kind: "success", text: "Wallet connected. No message was signed; signatures are requested only when you submit a Bradbury action." });
     } catch (error) {
       setNotice({ kind: "error", text: toError(error) });
     }
+  }
+
+  async function copyAddress() {
+    if (!wallet) return;
+    try {
+      await navigator.clipboard.writeText(wallet);
+      setCopiedAddress(true);
+      setNotice({ kind: "success", text: "Wallet address copied to your clipboard." });
+      window.setTimeout(() => setCopiedAddress(false), 1800);
+    } catch {
+      setNotice({ kind: "error", text: "Your browser blocked clipboard access. Copy the address from the wallet menu." });
+    }
+  }
+
+  function disconnectWallet() {
+    setWallet("");
+    setWalletMenuOpen(false);
+    setCopiedAddress(false);
+    setNotice({ kind: "info", text: "Wallet disconnected from EvidenceBound. To revoke browser-wallet permissions completely, use your wallet extension’s connected-sites settings." });
   }
 
   async function executeWrite(functionName: string, args: unknown[], label: string) {
@@ -232,7 +260,7 @@ export default function EvidenceBoundApp() {
         <nav className="desktop-nav" aria-label="Primary navigation">
           {navItems.map((item) => <a key={item} href={item === "Workspace" ? "#workspace" : `#${item.toLowerCase().replaceAll(" ", "-")}`} onClick={() => item === "Workspace" && openWorkspace()}>{item}</a>)}
         </nav>
-        <div className="top-actions"><StatusPill label="Bradbury live" tone="live" pulse /><button className="theme-button" aria-label={`Switch to ${theme === "light" ? "dark" : "light"} mode`} onClick={() => setTheme(theme === "light" ? "dark" : "light")}>{theme === "light" ? <Moon size={16} /> : <Sun size={16} />}</button><button className="wallet-button" onClick={connectWallet}><Wallet size={16} />{wallet ? shortHash(wallet, 6, 4) : "Connect wallet"}</button><button className="mobile-menu" aria-label="Open menu" onClick={() => setMobileOpen(!mobileOpen)}>{mobileOpen ? <X size={20} /> : <Menu size={20} />}</button></div>
+        <div className="top-actions"><StatusPill label="Bradbury live" tone="live" pulse /><button className="theme-button" aria-label={`Switch to ${theme === "light" ? "dark" : "light"} mode`} onClick={() => setTheme(theme === "light" ? "dark" : "light")}>{theme === "light" ? <Moon size={16} /> : <Sun size={16} />}</button><div className="wallet-wrap"><button className={`wallet-button ${wallet ? "wallet-connected" : ""}`} aria-expanded={wallet ? walletMenuOpen : undefined} onClick={() => wallet ? setWalletMenuOpen(!walletMenuOpen) : void connectWallet()}><Wallet size={16} />{wallet ? shortHash(wallet, 6, 4) : "Connect wallet"}{wallet && <ChevronRight size={14} className={walletMenuOpen ? "chevron-open" : ""} />}</button>{wallet && walletMenuOpen && <div className="wallet-popover" role="dialog" aria-label="Wallet account menu"><div className="wallet-popover-top"><span className="network-pulse" /><span>Connected to Bradbury</span></div><div className="wallet-address"><small>ACCOUNT</small><code>{wallet}</code></div><button className="wallet-menu-action" onClick={() => void copyAddress()}>{copiedAddress ? <Check size={14} /> : <Code2 size={14} />}{copiedAddress ? "Copied address" : "Copy address"}</button><button className="wallet-menu-action wallet-disconnect" onClick={disconnectWallet}><X size={14} />Disconnect</button><p>Disconnecting here clears this app session. Revoke full wallet permissions from your wallet extension.</p></div>}</div><button className="mobile-menu" aria-label="Open menu" onClick={() => setMobileOpen(!mobileOpen)}>{mobileOpen ? <X size={20} /> : <Menu size={20} />}</button></div>
       </header>
       {mobileOpen && <div className="mobile-nav">{navItems.map((item) => <a key={item} href={item === "Workspace" ? "#workspace" : `#${item.toLowerCase().replaceAll(" ", "-")}`} onClick={() => { setMobileOpen(false); if (item === "Workspace") openWorkspace(); }}>{item}</a>)}</div>}
 

@@ -173,6 +173,15 @@ cards, lifecycle visibility, wallet connection, and non-blocking transaction
 feedback. After a Bradbury action is accepted, the workspace re-reads the case
 in place instead of requiring a page reload.
 
+The wallet control is session-aware: after connecting, open the account button
+to view the full address, copy it, or disconnect it from this app. A browser
+wallet account connection normally does not require a signature; a signature is
+requested by the wallet only for a write transaction. App-level disconnect
+clears the session here, while complete permission revocation is performed in
+the wallet extension's connected-sites settings. Landing and workspace content
+is visible by default, with scroll-in animation treated as an enhancement, so a
+browser observer or hydration issue cannot leave the application blank.
+
 Run locally:
 
 ```bash
