@@ -176,9 +176,11 @@ in place instead of requiring a page reload.
 The workspace supports a complete operator flow: load any known case ID, create
 a case from editable policy/evidence metadata, submit independent challenge
 evidence, resolve, finalize after the challenge window, repair failed evidence,
-and recover expired cases. New-review transactions return a Bradbury transaction
-identifier; after acceptance, enter the resulting case ID in the selector to
-inspect that case because the current contract does not expose a case-list view.
+and recover expired cases. Case reads happen only when the operator presses
+Load or Sync, and a successful read fetches the case's own policy ID before
+displaying its policy. New-review transactions return a Bradbury transaction
+identifier; after acceptance, the UI searches forward from the active case ID
+for the new case because the current contract does not expose a case-list view.
 
 The wallet control is session-aware: after connecting, open the account button
 to view the full address, copy it, or disconnect it from this app. A browser
@@ -197,8 +199,10 @@ npm run dev
 ```
 
 Then open `http://localhost:3000`. The frontend uses public Bradbury reads by
-default. Wallet actions require a compatible browser wallet on Bradbury and
-are intentionally opt-in. Production checks are:
+default. Copy `.env.example` to `.env.local` to point the browser bundle at a
+different public contract, RPC, chain, explorer, or fixture base URL. Wallet
+actions require a compatible browser wallet on Bradbury and are intentionally
+opt-in. Production checks are:
 
 ```bash
 npm run lint
@@ -213,7 +217,12 @@ public page rendering remains independent of wallet availability.
 Before signing, the UI checks for chain ID `4221` (Bradbury) and offers the
 standard wallet switch/add-network request. It keeps the same lifecycle action
 disabled while that action is still processing in consensus, while unrelated
-work remains available. A read failure switches the workspace to a clearly
-marked read-only fallback and disables state-changing forms. Client errors are
-handled by `app/error.tsx`, and the initial load has a dedicated `app/loading.tsx`
-state.
+work remains available. Pending transactions are restored after a reload, and
+receipt failures, validator timeouts, and contract execution errors are shown
+as unconfirmed or failed rather than accepted state. A read failure switches
+the workspace to a clearly marked demo snapshot that is not contract-verified,
+keeps it read-only, and disables state-changing forms. The UI also reads the
+contract's `is_fresh` predicate before showing a finalized case as consumer
+ready, and disables challenge submission once the challenge deadline has
+closed. Client errors are handled by `app/error.tsx`, and the initial load has
+a dedicated `app/loading.tsx` state.

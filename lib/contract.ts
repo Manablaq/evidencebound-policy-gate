@@ -1,10 +1,17 @@
-export const CONTRACT_ADDRESS = "0x783D0Ac74991408A12ED6ccC2977411984990d28";
-export const RPC_URL = "https://rpc-bradbury.genlayer.com";
-export const BRADBURY_CHAIN_ID = 4221;
-export const BRADBURY_CHAIN_ID_HEX = "0x107d";
-export const EXPLORER_URL = `https://explorer-bradbury.genlayer.com/address/${CONTRACT_ADDRESS}`;
+const DEFAULT_CONTRACT_ADDRESS = "0x783D0Ac74991408A12ED6ccC2977411984990d28";
+const DEFAULT_RPC_URL = "https://rpc-bradbury.genlayer.com";
+const DEFAULT_CHAIN_ID = 4221;
+const DEFAULT_EXPLORER_URL = "https://explorer-bradbury.genlayer.com";
+const configuredChainId = Number.parseInt(process.env.NEXT_PUBLIC_EVIDENCEBOUND_CHAIN_ID || "", 10);
+
+export const CONTRACT_ADDRESS = process.env.NEXT_PUBLIC_EVIDENCEBOUND_CONTRACT_ADDRESS || DEFAULT_CONTRACT_ADDRESS;
+export const RPC_URL = process.env.NEXT_PUBLIC_EVIDENCEBOUND_RPC_URL || DEFAULT_RPC_URL;
+export const BRADBURY_CHAIN_ID = Number.isSafeInteger(configuredChainId) && configuredChainId > 0 ? configuredChainId : DEFAULT_CHAIN_ID;
+export const BRADBURY_CHAIN_ID_HEX = `0x${BRADBURY_CHAIN_ID.toString(16)}`;
+export const NETWORK_NAME = process.env.NEXT_PUBLIC_EVIDENCEBOUND_NETWORK_NAME || "GenLayer Bradbury";
+export const EXPLORER_URL = `${process.env.NEXT_PUBLIC_EVIDENCEBOUND_EXPLORER_URL || DEFAULT_EXPLORER_URL}/address/${CONTRACT_ADDRESS}`;
 export const REPOSITORY_URL = "https://github.com/Manablaq/evidencebound-policy-gate";
-export const FIXTURE_BASE_URL = "https://raw.githubusercontent.com/Manablaq/evidencebound-policy-gate/main/examples";
+export const FIXTURE_BASE_URL = process.env.NEXT_PUBLIC_EVIDENCEBOUND_FIXTURE_BASE_URL || "https://raw.githubusercontent.com/Manablaq/evidencebound-policy-gate/main/examples";
 
 export const DEMO = {
   policyId: 1n,

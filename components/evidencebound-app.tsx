@@ -38,6 +38,7 @@ import {
   EXPLORER_URL,
   getReadClient,
   getWriteClient,
+  NETWORK_NAME,
   REPOSITORY_URL,
   RPC_URL,
   shortHash,
@@ -63,6 +64,9 @@ declare global {
 type Notice = { kind: "info" | "success" | "error"; text: string };
 type Theme = "light" | "dark";
 type PendingAction = { functionName: string; label: string; caseId: string; hash: string };
+type TransactionState = { hash: string; label: string; status: string };
+
+const PENDING_TRANSACTION_STORAGE_KEY = "evidencebound-pending-transaction";
 
 const EMPTY_EVIDENCE: EvidenceDraft = { uri: "", hash: "", issuer: "", recordId: "", version: "1", publishedAt: "", validUntil: "" };
 
@@ -75,7 +79,11 @@ function asDraftNumber(value: string, label: string) {
   return BigInt(value.trim());
 }
 
-const FALLBACK_CASE: ChainCase = {
+function asContractBoolean(value: unknown) {
+  return value === true || value === 1 || value === 1n || value === "1" || value === "true";
+}
+
+const DEMO_CASE: ChainCase = {
   case_id: 1n, requester: "0x1f87Ae197af539253978d435aD45cCf28Fb95024", policy_id: 1n,
   policy_version: 1n, policy_name: DEMO.policyName, policy_text: "Evidence must satisfy the registered policy.", policy_digest: DEMO.policyDigest,
   subject: DEMO.subject, submitted_content: DEMO.submittedContent, context: DEMO.context,
@@ -107,9 +115,19 @@ function toError(error: unknown) {
 }
 
 function safeChainCase(value: unknown): ChainCase {
-  if (!value || typeof value !== "object") return FALLBACK_CASE;
+  if (!value || typeof value !== "object") throw new Error("The contract returned no case state.");
   const raw = value as Record<string, unknown>;
-  return Object.fromEntries(CASE_FIELDS.map((field) => [field, raw[field] ?? FALLBACK_CASE[field]])) as ChainCase;
+  const missingFields = CASE_FIELDS.filter((field) => raw[field] === undefined || raw[field] === null);
+  if (missingFields.length > 0) throw new Error(`The contract returned an incomplete case (missing ${missingFields.join(", ")}).`);
+  return raw as ChainCase;
+}
+
+function safePolicy(value: unknown): Record<string, unknown> {
+  if (!value || typeof value !== "object") throw new Error("The contract returned no policy state.");
+  const raw = value as Record<string, unknown>;
+  const missingFields = ["policy_id", "name", "policy_text", "policy_digest", "version", "active"].filter((field) => raw[field] === undefined || raw[field] === null);
+  if (missingFields.length > 0) throw new Error(`The contract returned an incomplete policy (missing ${missingFields.join(", ")}).`);
+  return raw;
 }
 
 function Logo() {
@@ -124,17 +142,19 @@ export default function EvidenceBoundApp() {
   const [view, setView] = useState<"landing" | "workspace">("landing");
   const [theme, setTheme] = useState<Theme>("light");
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [caseId, setCaseId] = useState("1");
-  const [liveCase, setLiveCase] = useState<ChainCase>(FALLBACK_CASE);
+  const [caseIdInput, setCaseIdInput] = useState("1");
+  const [activeCaseId, setActiveCaseId] = useState("1");
+  const [liveCase, setLiveCase] = useState<ChainCase>(DEMO_CASE);
   const [policy, setPolicy] = useState<Record<string, unknown> | null>(null);
   const [isReading, setIsReading] = useState(false);
-  const [readOnly, setReadOnly] = useState(false);
+  const [readOnly, setReadOnly] = useState(true);
+  const [contractFresh, setContractFresh] = useState<boolean | null>(null);
   const [wallet, setWallet] = useState("");
   const [walletOnBradbury, setWalletOnBradbury] = useState(false);
   const [walletMenuOpen, setWalletMenuOpen] = useState(false);
   const [copiedAddress, setCopiedAddress] = useState(false);
-  const [notice, setNotice] = useState<Notice>({ kind: "info", text: "Public reads are available. Connect a Bradbury wallet only when you want to submit an action." });
-  const [tx, setTx] = useState<{ hash: string; label: string; status: string } | null>(null);
+  const [notice, setNotice] = useState<Notice>({ kind: "info", text: `Public reads are available. Connect a ${NETWORK_NAME} wallet only when you want to submit an action.` });
+  const [tx, setTx] = useState<TransactionState | null>(null);
   const [isBusy, setIsBusy] = useState(false);
   const [pendingAction, setPendingAction] = useState<PendingAction | null>(null);
   const [showCreateForm, setShowCreateForm] = useState(false);
@@ -146,6 +166,9 @@ export default function EvidenceBoundApp() {
   const [challengeNote, setChallengeNote] = useState("");
   const [nowSeconds, setNowSeconds] = useState(0);
   const readRequest = useRef(0);
+  const monitoredTransactions = useRef(new Set<string>());
+  const restoredTransaction = useRef("");
+  const workspaceOpened = useRef(false);
 
   const status = statusName(liveCase.status);
   const decision = decisionName(liveCase.decision);
@@ -153,7 +176,10 @@ export default function EvidenceBoundApp() {
   const final = status === "FINALIZED";
   const caseExpired = nowSeconds > 0 && asNumber(liveCase.expires_at) > 0 && nowSeconds >= asNumber(liveCase.expires_at);
   const challengeWindowOpen = nowSeconds === 0 || (asNumber(liveCase.challenge_deadline) > 0 && nowSeconds < asNumber(liveCase.challenge_deadline));
-  const actionPending = (functionName: string) => pendingAction?.functionName === functionName && pendingAction.caseId === caseId;
+  const challengeWindowClosed = !challengeWindowOpen;
+  const consumerReady = !readOnly && final && contractFresh === true;
+  const evidenceConsensusBound = !readOnly && resolved && asContractBoolean(liveCase.consensus_bound);
+  const actionPending = (functionName: string) => pendingAction?.functionName === functionName && pendingAction.caseId === activeCaseId;
 
   useEffect(() => {
     const storedTheme = window.localStorage.getItem("evidencebound-theme") as Theme | null;
@@ -202,31 +228,57 @@ export default function EvidenceBoundApp() {
     window.localStorage.setItem("evidencebound-theme", theme);
   }, [theme]);
 
-  const readState = useCallback(async (id = caseId) => {
+  useEffect(() => {
+    if (tx && pendingAction) {
+      window.localStorage.setItem(PENDING_TRANSACTION_STORAGE_KEY, JSON.stringify({ tx, pendingAction }));
+    } else if (!pendingAction) {
+      window.localStorage.removeItem(PENDING_TRANSACTION_STORAGE_KEY);
+    }
+  }, [pendingAction, tx]);
+
+  const readState = useCallback(async (id: string) => {
+    const requestedId = id.trim();
     const requestId = ++readRequest.current;
     setIsReading(true);
+    setReadOnly(true);
+    setPolicy(null);
+    setContractFresh(null);
+    setLiveCase(DEMO_CASE);
     try {
       const client = await getReadClient();
-      const [nextCase, nextPolicy] = await Promise.all([
-        client.readContract({ address: CONTRACT_ADDRESS, functionName: "get_case", args: [BigInt(id)] }),
-        client.readContract({ address: CONTRACT_ADDRESS, functionName: "get_policy", args: [DEMO.policyId] }),
+      const nextCase = await client.readContract({ address: CONTRACT_ADDRESS, functionName: "get_case", args: [BigInt(requestedId)] });
+      const loadedCase = safeChainCase(nextCase);
+      const [nextPolicy, nextFresh] = await Promise.all([
+        client.readContract({ address: CONTRACT_ADDRESS, functionName: "get_policy", args: [BigInt(String(loadedCase.policy_id))] }),
+        client.readContract({ address: CONTRACT_ADDRESS, functionName: "is_fresh", args: [BigInt(requestedId)] }),
       ]);
       if (requestId !== readRequest.current) return;
-      setLiveCase(safeChainCase(nextCase));
-      setPolicy(nextPolicy as Record<string, unknown>);
+      setLiveCase(loadedCase);
+      setPolicy(safePolicy(nextPolicy));
+      setContractFresh(asContractBoolean(nextFresh));
+      setActiveCaseId(requestedId);
+      setCaseIdInput(requestedId);
       setReadOnly(false);
-      setNotice({ kind: "success", text: `Bradbury state synced for case ${id}. The workspace updated without a page reload.` });
+      setNotice({ kind: "success", text: `${NETWORK_NAME} state synced for case ${requestedId}. The workspace updated without a page reload.` });
     } catch (error) {
       if (requestId !== readRequest.current) return;
       setReadOnly(true);
-      setNotice({ kind: "error", text: `Live read unavailable: ${toError(error)} Showing the verified demo snapshot instead.` });
-      setLiveCase(FALLBACK_CASE);
+      setPolicy(null);
+      setContractFresh(null);
+      setLiveCase(DEMO_CASE);
+      setNotice({ kind: "error", text: `Live read unavailable: ${toError(error)} Showing demo data only; it is not contract-verified.` });
     } finally {
       if (requestId === readRequest.current) setIsReading(false);
     }
-  }, [caseId]);
+  }, []);
 
-  useEffect(() => { if (view === "workspace") void readState(); }, [view, readState]);
+  useEffect(() => {
+    if (view === "workspace" && !workspaceOpened.current) {
+      workspaceOpened.current = true;
+      void readState(activeCaseId);
+    }
+    if (view === "landing") workspaceOpened.current = false;
+  }, [activeCaseId, readState, view]);
 
   function openWorkspace() {
     setView("workspace");
@@ -240,7 +292,7 @@ export default function EvidenceBoundApp() {
 
   async function connectWallet() {
     if (!window.ethereum) {
-      setNotice({ kind: "error", text: "No browser wallet detected. Install a compatible wallet, switch to GenLayer Bradbury, then try again." });
+      setNotice({ kind: "error", text: `No browser wallet detected. Install a compatible wallet, switch to ${NETWORK_NAME}, then try again.` });
       return;
     }
     try {
@@ -250,19 +302,19 @@ export default function EvidenceBoundApp() {
           await window.ethereum.request({ method: "wallet_switchEthereumChain", params: [{ chainId: BRADBURY_CHAIN_ID_HEX }] });
         } catch (switchError) {
           const code = switchError && typeof switchError === "object" && "code" in switchError ? String(switchError.code) : "";
-          if (code !== "4902") throw new Error("Switch your wallet to GenLayer Bradbury before connecting.");
-          await window.ethereum.request({ method: "wallet_addEthereumChain", params: [{ chainId: BRADBURY_CHAIN_ID_HEX, chainName: "GenLayer Bradbury", nativeCurrency: { name: "GEN", symbol: "GEN", decimals: 18 }, rpcUrls: [RPC_URL], blockExplorerUrls: [EXPLORER_URL] }] });
+          if (code !== "4902") throw new Error(`Switch your wallet to ${NETWORK_NAME} before connecting.`);
+          await window.ethereum.request({ method: "wallet_addEthereumChain", params: [{ chainId: BRADBURY_CHAIN_ID_HEX, chainName: NETWORK_NAME, nativeCurrency: { name: "GEN", symbol: "GEN", decimals: 18 }, rpcUrls: [RPC_URL], blockExplorerUrls: [EXPLORER_URL] }] });
         }
       }
       const verifiedChainId = String(await window.ethereum.request({ method: "eth_chainId" })).toLowerCase();
-      if (verifiedChainId !== BRADBURY_CHAIN_ID_HEX) throw new Error("Switch your wallet to GenLayer Bradbury before connecting.");
+      if (verifiedChainId !== BRADBURY_CHAIN_ID_HEX) throw new Error(`Switch your wallet to ${NETWORK_NAME} before connecting.`);
       const accounts = await window.ethereum.request({ method: "eth_requestAccounts" }) as string[];
       const account = accounts[0] ?? "";
       if (!account) throw new Error("Your wallet did not provide an account.");
       setWallet(account);
       setWalletOnBradbury(true);
       setWalletMenuOpen(false);
-      setNotice({ kind: "success", text: "Wallet connected. No message was signed; signatures are requested only when you submit a Bradbury action." });
+      setNotice({ kind: "success", text: `Wallet connected. No message was signed; signatures are requested only when you submit a ${NETWORK_NAME} action.` });
     } catch (error) {
       setNotice({ kind: "error", text: toError(error) });
     }
@@ -288,7 +340,7 @@ export default function EvidenceBoundApp() {
   }
 
   async function executeWrite(functionName: string, args: unknown[], label: string) {
-    const targetCaseId = functionName === "open_case" ? "new" : caseId;
+    const targetCaseId = functionName === "open_case" ? "new" : activeCaseId;
     if (pendingAction && pendingAction.functionName === functionName && pendingAction.caseId === targetCaseId) {
       throw new Error(`${label} is already processing. Wait for its consensus status to update before repeating it.`);
     }
@@ -308,19 +360,19 @@ export default function EvidenceBoundApp() {
   }
 
   async function ensureBradburyWallet() {
-    if (!window.ethereum) throw new Error("No browser wallet detected. Install a wallet connected to GenLayer Bradbury.");
+    if (!window.ethereum) throw new Error(`No browser wallet detected. Install a wallet connected to ${NETWORK_NAME}.`);
     const chainId = String(await window.ethereum.request({ method: "eth_chainId" })).toLowerCase();
     if (chainId !== BRADBURY_CHAIN_ID_HEX) {
       setWalletOnBradbury(false);
-      throw new Error("Your wallet is on the wrong network. Switch to GenLayer Bradbury before submitting.");
+      throw new Error(`Your wallet is on the wrong network. Switch to ${NETWORK_NAME} before submitting.`);
     }
     setWalletOnBradbury(true);
   }
 
-  async function findLatestCaseId(startId: string) {
+  const findLatestCaseId = useCallback(async (startId: string) => {
     const client = await getReadClient();
     let latest = asDraftNumber(startId, "Case ID");
-    for (let offset = 1; offset <= 20; offset += 1) {
+    for (let offset = 1; offset <= 100; offset += 1) {
       const candidate = latest + 1n;
       try {
         await client.readContract({ address: CONTRACT_ADDRESS, functionName: "get_case", args: [candidate] });
@@ -330,17 +382,33 @@ export default function EvidenceBoundApp() {
       }
     }
     return String(latest);
-  }
+  }, []);
 
-  async function monitorTransaction(hash: string, label: string, targetCaseId: string, functionName: string) {
+  const monitorTransaction = useCallback(async (hash: string, label: string, targetCaseId: string, functionName: string) => {
+    if (monitoredTransactions.current.has(hash)) return;
+    monitoredTransactions.current.add(hash);
     try {
-      const receipt = await (await getReadClient()).waitForTransactionReceipt({ hash, status: "ACCEPTED", retries: 120, interval: 5000 });
-      setTx({ hash, label, status: String(receipt?.txExecutionResultName ?? "Accepted") });
+      const client = await getReadClient();
+      let receipt = await client.waitForTransactionReceipt({ hash, status: "ACCEPTED", retries: 120, interval: 5000 });
+      if (!receipt?.txExecutionResultName || receipt.txExecutionResultName === "NOT_VOTED") {
+        receipt = await client.waitForTransactionReceipt({ hash, status: "FINALIZED", retries: 120, interval: 5000 });
+      }
+      const statusName = String(receipt?.statusName ?? receipt?.status_name ?? "");
+      const executionResult = String(receipt?.txExecutionResultName ?? "");
+      if (["CANCELED", "UNDETERMINED", "VALIDATORS_TIMEOUT", "LEADER_TIMEOUT"].includes(statusName) || executionResult === "FINISHED_WITH_ERROR") {
+        const failure = executionResult === "FINISHED_WITH_ERROR" ? "contract execution failed" : `transaction status is ${statusName.toLowerCase().replaceAll("_", " ")}`;
+        setTx({ hash, label, status: "Failed" });
+        setPendingAction((current) => current?.hash === hash ? null : current);
+        setNotice({ kind: "error", text: `${label} was not applied: ${failure}. No contract state was updated.` });
+        return;
+      }
+      setTx({ hash, label, status: executionResult === "FINISHED_WITH_RETURN" ? "Accepted · applied" : "Accepted" });
       setPendingAction((current) => current?.hash === hash ? null : current);
       if (functionName === "open_case") {
         try {
-          const latestCaseId = await findLatestCaseId(caseId);
-          setCaseId(latestCaseId);
+          const latestCaseId = await findLatestCaseId(activeCaseId);
+          setCaseIdInput(latestCaseId);
+          setActiveCaseId(latestCaseId);
           setNotice({ kind: "success", text: `New review accepted by Bradbury. Showing case ${latestCaseId} now.` });
           window.setTimeout(() => void readState(latestCaseId), 800);
         } catch {
@@ -349,11 +417,32 @@ export default function EvidenceBoundApp() {
       } else {
         window.setTimeout(() => void readState(targetCaseId), 800);
       }
-    } catch {
-      setTx((current) => current?.hash === hash ? { ...current, status: "Accepted; finalizing" } : current);
-      setNotice({ kind: "info", text: `${label} is still processing in Bradbury. You can continue with other work; repeating this same action is temporarily disabled.` });
+    } catch (error) {
+      const message = toError(error);
+      const timedOut = message.toLowerCase().includes("timed out");
+      setTx((current) => current?.hash === hash ? { ...current, status: timedOut ? "Monitoring timed out" : "Receipt unavailable" } : current);
+      setNotice({ kind: "info", text: timedOut ? `${label} is still pending in Bradbury. Monitoring timed out after 10 minutes; retry monitoring from the transaction notice before submitting the same action again.` : `${label} was submitted, but its receipt could not be confirmed yet (${message}). Retry monitoring before submitting the same action again.` });
+    } finally {
+      monitoredTransactions.current.delete(hash);
     }
-  }
+  }, [activeCaseId, findLatestCaseId, readState]);
+
+  useEffect(() => {
+    const stored = window.localStorage.getItem(PENDING_TRANSACTION_STORAGE_KEY);
+    if (!stored) return;
+    try {
+      const parsed = JSON.parse(stored) as { tx?: TransactionState; pendingAction?: PendingAction };
+      if (!parsed.tx?.hash || !parsed.tx.label || !parsed.pendingAction?.hash || parsed.pendingAction.hash !== parsed.tx.hash) throw new Error("invalid pending transaction");
+      if (restoredTransaction.current === parsed.tx.hash) return;
+      restoredTransaction.current = parsed.tx.hash;
+      setTx(parsed.tx);
+      setPendingAction(parsed.pendingAction);
+      setNotice({ kind: "info", text: `Restored ${parsed.pendingAction.label} after reload. Checking its Bradbury consensus status now.` });
+      void monitorTransaction(parsed.tx.hash, parsed.pendingAction.label, parsed.pendingAction.caseId, parsed.pendingAction.functionName);
+    } catch {
+      window.localStorage.removeItem(PENDING_TRANSACTION_STORAGE_KEY);
+    }
+  }, [monitorTransaction]);
 
   function evidenceArgs(evidence: EvidenceDraft) {
     return [evidence.uri.trim(), evidence.hash.trim(), evidence.issuer.trim(), evidence.recordId.trim(), asDraftNumber(evidence.version, "Evidence version"), asDraftNumber(evidence.publishedAt, "Published time"), asDraftNumber(evidence.validUntil, "Valid-until time")];
@@ -372,31 +461,31 @@ export default function EvidenceBoundApp() {
   }
 
   async function resolveCase() {
-    try { await executeWrite("resolve_case", [BigInt(caseId)], "Case resolution"); }
+    try { await executeWrite("resolve_case", [BigInt(activeCaseId)], "Case resolution"); }
     catch (error) { setIsBusy(false); setNotice({ kind: "error", text: toError(error) }); }
   }
 
   async function challengeCase() {
     try {
       if (!challengeNote.trim()) throw new Error("A challenge note is required.");
-      await executeWrite("submit_challenge", [asDraftNumber(caseId, "Case ID"), ...evidenceArgs(challengeDraft), challengeNote.trim()], "Independent challenge");
+      await executeWrite("submit_challenge", [asDraftNumber(activeCaseId, "Case ID"), ...evidenceArgs(challengeDraft), challengeNote.trim()], "Independent challenge");
       setShowChallengeForm(false);
     } catch (error) { setIsBusy(false); setNotice({ kind: "error", text: toError(error) }); }
   }
 
   async function finalizeCase() {
-    try { await executeWrite("finalize_case", [asDraftNumber(caseId, "Case ID")], "Case finalization"); }
+    try { await executeWrite("finalize_case", [asDraftNumber(activeCaseId, "Case ID")], "Case finalization"); }
     catch (error) { setIsBusy(false); setNotice({ kind: "error", text: toError(error) }); }
   }
 
   async function recoverCase() {
-    try { await executeWrite("recover_case", [asDraftNumber(caseId, "Case ID")], "Case recovery"); }
+    try { await executeWrite("recover_case", [asDraftNumber(activeCaseId, "Case ID")], "Case recovery"); }
     catch (error) { setIsBusy(false); setNotice({ kind: "error", text: toError(error) }); }
   }
 
   async function repairCase() {
     try {
-      await executeWrite("repair_case_evidence", [asDraftNumber(caseId, "Case ID"), ...evidenceArgs(repairDraft.evidenceA), ...evidenceArgs(repairDraft.evidenceB)], "Evidence repair");
+      await executeWrite("repair_case_evidence", [asDraftNumber(activeCaseId, "Case ID"), ...evidenceArgs(repairDraft.evidenceA), ...evidenceArgs(repairDraft.evidenceB)], "Evidence repair");
       setShowRepairForm(false);
     } catch (error) { setIsBusy(false); setNotice({ kind: "error", text: toError(error) }); }
   }
@@ -416,7 +505,11 @@ export default function EvidenceBoundApp() {
   }
 
   function loadCase() {
-    try { asDraftNumber(caseId, "Case ID"); void readState(); }
+    try {
+      const requestedId = caseIdInput.trim();
+      asDraftNumber(requestedId, "Case ID");
+      void readState(requestedId);
+    }
     catch (error) { setNotice({ kind: "error", text: toError(error) }); }
   }
 
@@ -442,16 +535,16 @@ export default function EvidenceBoundApp() {
         <section className="trust-section section-pad" id="trust-model"><div className="trust-panel reveal"><div><div className="section-kicker light">02 / TRUST MODEL</div><h2>Permission comes<br /><span>after proof.</span></h2><p>Consumer predicates remain unavailable until a resolved decision survives the challenge window, matches the exact policy fingerprint, and is still fresh.</p><a className="text-link" href={EXPLORER_URL} target="_blank" rel="noreferrer">Inspect the Bradbury contract <ArrowUpRightIcon /></a></div><div className="trust-list"><div><b>01</b><span><strong>Issuer registry</strong><small>Publisher authority and source group are explicit trust roots.</small></span><Check size={16} /></div><div><b>02</b><span><strong>Evidence binding</strong><small>Safe origin/path rules prevent an impersonating host.</small></span><Check size={16} /></div><div><b>03</b><span><strong>Validator agreement</strong><small>Every result-bearing field must match independently.</small></span><Check size={16} /></div><div><b>04</b><span><strong>Finality gate</strong><small>Challengeable state is never presented as consumer-ready.</small></span><Check size={16} /></div></div></div></section>
         <section className="cta-section section-pad reveal"><div className="cta-card"><div><span className="section-kicker">03 / READY WHEN YOU ARE</span><h2>See the trust boundary<br />in a live review.</h2></div><button className="button button-light" onClick={openWorkspace}>Enter workspace <ArrowDownRight size={17} /></button></div></section>
       </> : <section className="workspace-section section-pad" id="workspace">
-        <div className="workspace-head reveal"><div><div className="eyebrow"><span className="eyebrow-line" /> LIVE WORKSPACE / CASE REVIEW</div><h1>Evidence control room.</h1><p>Inspect the current policy, trace the evidence snapshot, and keep every Bradbury action visible.</p></div><div className="workspace-head-actions"><div className="case-selector"><label htmlFor="case-id">CASE ID</label><div><input id="case-id" inputMode="numeric" value={caseId} onChange={(event) => setCaseId(event.target.value)} onKeyDown={(event) => event.key === "Enter" && loadCase()} /><button className="button button-outline" onClick={loadCase} disabled={isReading}>Load</button></div></div><button className="button button-quiet" onClick={() => void readState()} disabled={isReading}><RefreshCw size={16} className={isReading ? "spin" : ""} /> {isReading ? "Syncing" : "Sync state"}</button><button className="button button-primary" onClick={() => { setCaseDraft(demoCaseDraft()); setShowCreateForm(!showCreateForm); setShowRepairForm(false); setShowChallengeForm(false); }} disabled={isBusy || readOnly || pendingAction?.functionName === "open_case"}><Sparkles size={16} /> {showCreateForm ? "Close form" : "New review"}</button></div></div>
-        <div className="notice-bar reveal" role={notice.kind === "error" ? "alert" : "status"} aria-live="polite"><div className={`notice-icon ${notice.kind}`}><CircleAlert size={17} /></div><span>{notice.text}</span>{readOnly && <StatusPill label="Read-only fallback" tone="warning" />}</div>
+        <div className="workspace-head reveal"><div><div className="eyebrow"><span className="eyebrow-line" /> LIVE WORKSPACE / CASE REVIEW</div><h1>Evidence control room.</h1><p>Inspect the current policy, trace the evidence snapshot, and keep every Bradbury action visible.</p></div><div className="workspace-head-actions"><div className="case-selector"><label htmlFor="case-id">CASE ID</label><div><input id="case-id" inputMode="numeric" value={caseIdInput} onChange={(event) => setCaseIdInput(event.target.value)} onKeyDown={(event) => event.key === "Enter" && loadCase()} /><button className="button button-outline" onClick={loadCase} disabled={isReading}>Load</button></div></div><button className="button button-quiet" onClick={() => void readState(activeCaseId)} disabled={isReading}><RefreshCw size={16} className={isReading ? "spin" : ""} /> {isReading ? "Syncing" : "Sync state"}</button><button className="button button-primary" onClick={() => { setCaseDraft(demoCaseDraft()); setShowCreateForm(!showCreateForm); setShowRepairForm(false); setShowChallengeForm(false); }} disabled={isBusy || readOnly || pendingAction?.functionName === "open_case"}><Sparkles size={16} /> {showCreateForm ? "Close form" : "New review"}</button></div></div>
+        <div className="notice-bar reveal" role={notice.kind === "error" ? "alert" : "status"} aria-live="polite"><div className={`notice-icon ${notice.kind}`}><CircleAlert size={17} /></div><span>{notice.text}</span><StatusPill label={readOnly ? "Demo snapshot · not contract-verified" : "Contract state verified"} tone={readOnly ? "warning" : "positive"} /></div>
         {showCreateForm && <CaseForm mode="create" draft={caseDraft} disabled={isBusy || !walletOnBradbury} onCaseChange={(field, value) => updateCaseDraft("create", field, value)} onEvidenceChange={(side, field, value) => updateEvidenceDraft("create", side, field, value)} onSubmit={() => void createCase()} onCancel={() => setShowCreateForm(false)} />}
         {showRepairForm && <CaseForm mode="repair" draft={repairDraft} disabled={isBusy || !walletOnBradbury} onCaseChange={(field, value) => updateCaseDraft("repair", field, value)} onEvidenceChange={(side, field, value) => updateEvidenceDraft("repair", side, field, value)} onSubmit={() => void repairCase()} onCancel={() => setShowRepairForm(false)} />}
         {showChallengeForm && <ChallengeForm evidence={challengeDraft} note={challengeNote} disabled={isBusy || !walletOnBradbury} onEvidenceChange={(field, value) => setChallengeDraft((current) => ({ ...current, [field]: value }))} onNoteChange={setChallengeNote} onSubmit={() => void challengeCase()} onCancel={() => setShowChallengeForm(false)} />}
         <div className="workspace-grid reveal">
-          <section className="workspace-main"><div className="panel case-panel"><div className="panel-heading"><div><span className="mini-label">ACTIVE CASE</span><h2>{String(liveCase.subject)} <span className="case-id">#{String(liveCase.case_id)}</span></h2></div><StatusPill label={status.replace("_", " ")} tone={statusTone(liveCase.status)} pulse={status === "OPEN" || status === "CHALLENGED"} /></div><div className="case-meta-row"><span><Clock3 size={14} /> Created {formatDate(liveCase.created_at)}</span><span><Layers3 size={14} /> Revision {String(liveCase.evidence_revision)}</span><span><BadgeCheck size={14} /> {String(liveCase.resolution_count)} resolutions</span></div><div className="decision-banner"><div className="decision-label">CONSENSUS DECISION</div><div className="decision-value"><strong className={`decision-${decisionTone(liveCase.decision)}`}>{decision}</strong><span>{asNumber(liveCase.confidence) ? `${asNumber(liveCase.confidence) / 100}% confidence` : "Awaiting adjudication"}</span></div><p>{String(liveCase.summary || "Resolve the evidence snapshot through GenLayer to receive a canonical decision.")}</p><div className="decision-details"><span>Reason <b>{String(liveCase.reason_code || "pending")}</b></span><span>Bound <b>{liveCase.consensus_bound ? "yes" : "no"}</b></span><span>Consumer ready <b>{final ? "yes" : "no"}</b></span></div></div><div className="action-row"><button className="button button-primary" disabled={isBusy || readOnly || !walletOnBradbury || actionPending("resolve_case") || !["OPEN", "CHALLENGED", "ERROR"].includes(status)} onClick={resolveCase}>{actionPending("resolve_case") ? "Consensus pending…" : isBusy ? "Submitting…" : "Resolve through GenLayer"}<ArrowRight size={16} /></button><button className="button button-outline" disabled={isBusy || readOnly || actionPending("submit_challenge") || status !== "RESOLVED"} onClick={() => { setChallengeDraft(demoChallengeEvidence()); setChallengeNote("Customer dispute submitted for independent re-review."); setShowChallengeForm(!showChallengeForm); setShowCreateForm(false); setShowRepairForm(false); }}> {showChallengeForm ? "Close challenge" : "Submit challenge"}</button><button className="button button-outline" disabled={isBusy || readOnly || !walletOnBradbury || actionPending("finalize_case") || status !== "RESOLVED" || challengeWindowOpen} onClick={finalizeCase}>{actionPending("finalize_case") ? "Finalizing…" : "Finalize case"}</button>{status === "ERROR" && <button className="button button-outline" disabled={isBusy || readOnly || actionPending("repair_case_evidence")} onClick={() => { setRepairDraft(demoCaseDraft()); setShowRepairForm(true); setShowCreateForm(false); setShowChallengeForm(false); }}>Repair evidence</button>}{caseExpired && !["FINALIZED", "RECOVERED"].includes(status) && <button className="button button-outline" disabled={isBusy || readOnly || !walletOnBradbury || actionPending("recover_case")} onClick={recoverCase}>{actionPending("recover_case") ? "Recovering…" : "Recover expired"}</button>}<button className="button button-quiet compact" onClick={() => void readState()} aria-label="Refresh case"><RefreshCw size={16} /></button></div></div><div className="panel evidence-panel"><div className="panel-heading"><div><span className="mini-label">EVIDENCE SNAPSHOT</span><h2>Independent records</h2></div><span className="panel-caption">Full-body SHA-256 pinned</span></div><div className="evidence-list"><EvidenceRow label="EVIDENCE A" issuer={String(liveCase.evidence_a_issuer)} group={String(liveCase.evidence_a_group)} record={String(liveCase.evidence_a_record_id)} hash={String(liveCase.evidence_a_hash)} uri={String(liveCase.evidence_a_uri)} /><div className="evidence-connector"><span /> distinct source groups <span /></div><EvidenceRow label="EVIDENCE B" issuer={String(liveCase.evidence_b_issuer)} group={String(liveCase.evidence_b_group)} record={String(liveCase.evidence_b_record_id)} hash={String(liveCase.evidence_b_hash)} uri={String(liveCase.evidence_b_uri)} />{String(liveCase.challenge_uri) && <><div className="evidence-connector challenge-connector"><span /> challenged with independent record <span /></div><EvidenceRow label="CHALLENGE" issuer={String(liveCase.challenge_issuer)} group={String(liveCase.challenge_group)} record={String(liveCase.challenge_record_id)} hash={String(liveCase.challenge_hash)} uri={String(liveCase.challenge_uri)} /></>}</div></div></section>
-          <aside className="workspace-side"><div className="panel policy-panel"><div className="panel-heading"><div><span className="mini-label">POLICY</span><h2>{String(policy?.name || liveCase.policy_name)}</h2></div><Code2 size={18} /></div><p>{String(policy?.policy_text || liveCase.policy_text)}</p><div className="policy-fingerprint"><span>VERSION</span><b>v{String(policy?.version || liveCase.policy_version)}</b><span>DIGEST</span><code>{shortHash(policy?.policy_digest || liveCase.policy_digest, 12, 8)}</code></div><a href={REPOSITORY_URL} target="_blank" rel="noreferrer" className="text-link">View audited source <ExternalLink size={14} /></a></div><div className="panel lifecycle-panel"><div className="panel-heading"><div><span className="mini-label">LIFECYCLE</span><h2>Review path</h2></div><Activity size={18} /></div><LifecycleItem label="Snapshot pinned" detail="2 issuer-bound records" done /><LifecycleItem label="Leader adjudication" detail={resolved ? "Canonical result returned" : "Awaiting resolution"} done={resolved} active={!resolved} /><LifecycleItem label="Challenge window" detail={final ? "Closed · final" : "Open until deadline"} done={final} active={resolved && !final} /><LifecycleItem label="Consumer predicate" detail={final ? "Available to callers" : "Locked until finality"} done={final} active={false} /></div><div className="panel network-panel"><div className="network-title"><span className="network-pulse" /> Bradbury network</div><div className="network-row"><span>Contract</span><code>{shortHash(CONTRACT_ADDRESS)}</code></div><div className="network-row"><span>Source</span><code>SHA {shortHash(String(liveCase.policy_digest), 8, 5)}</code></div><a href={EXPLORER_URL} target="_blank" rel="noreferrer" className="explorer-link">Open Explorer <ExternalLink size={13} /></a></div></aside>
+          <section className="workspace-main"><div className="panel case-panel"><div className="panel-heading"><div><span className="mini-label">{readOnly ? "DEMO SNAPSHOT · NOT CONTRACT VERIFIED" : "ACTIVE CASE"}</span><h2>{String(liveCase.subject)} <span className="case-id">#{String(liveCase.case_id)}</span></h2></div><StatusPill label={readOnly ? "Demo data" : status.replace("_", " ")} tone={readOnly ? "warning" : statusTone(liveCase.status)} pulse={!readOnly && (status === "OPEN" || status === "CHALLENGED")} /></div><div className="case-meta-row"><span><Clock3 size={14} /> Created {formatDate(liveCase.created_at)}</span><span><Layers3 size={14} /> Revision {String(liveCase.evidence_revision)}</span><span><BadgeCheck size={14} /> {String(liveCase.resolution_count)} resolutions</span></div><div className="decision-banner"><div className="decision-label">{readOnly ? "DEMO DECISION · NOT CONTRACT VERIFIED" : "CONSENSUS DECISION"}</div><div className="decision-value"><strong className={`decision-${decisionTone(liveCase.decision)}`}>{decision}</strong><span>{asNumber(liveCase.confidence) ? `${asNumber(liveCase.confidence) / 100}% confidence` : "Awaiting adjudication"}</span></div><p>{String(liveCase.summary || "Resolve the evidence snapshot through GenLayer to receive a canonical decision.")}</p><div className="decision-details"><span>Reason <b>{String(liveCase.reason_code || "pending")}</b></span><span>Bound <b>{readOnly ? "unavailable" : asContractBoolean(liveCase.consensus_bound) ? "yes" : "no"}</b></span><span>Fresh <b>{readOnly || contractFresh === null ? "unavailable" : contractFresh ? "yes" : "no"}</b></span><span>Consumer ready <b>{readOnly ? "unavailable" : consumerReady ? "yes" : "no"}</b></span></div></div><div className="action-row"><button className="button button-primary" disabled={isBusy || readOnly || !walletOnBradbury || actionPending("resolve_case") || caseExpired || !["OPEN", "CHALLENGED", "ERROR"].includes(status)} onClick={resolveCase}>{actionPending("resolve_case") ? "Consensus pending…" : isBusy ? "Submitting…" : "Resolve through GenLayer"}<ArrowRight size={16} /></button><button className="button button-outline" disabled={isBusy || readOnly || actionPending("submit_challenge") || status !== "RESOLVED" || !challengeWindowOpen} onClick={() => { setChallengeDraft(demoChallengeEvidence()); setChallengeNote("Customer dispute submitted for independent re-review."); setShowChallengeForm(!showChallengeForm); setShowCreateForm(false); setShowRepairForm(false); }}> {showChallengeForm ? "Close challenge" : "Submit challenge"}</button><button className="button button-outline" disabled={isBusy || readOnly || !walletOnBradbury || actionPending("finalize_case") || status !== "RESOLVED" || challengeWindowOpen} onClick={finalizeCase}>{actionPending("finalize_case") ? "Finalizing…" : "Finalize case"}</button>{status === "ERROR" && <button className="button button-outline" disabled={isBusy || readOnly || actionPending("repair_case_evidence")} onClick={() => { setRepairDraft(demoCaseDraft()); setShowRepairForm(true); setShowCreateForm(false); setShowChallengeForm(false); }}>Repair evidence</button>}{caseExpired && !["FINALIZED", "RECOVERED"].includes(status) && <button className="button button-outline" disabled={isBusy || readOnly || !walletOnBradbury || actionPending("recover_case")} onClick={recoverCase}>{actionPending("recover_case") ? "Recovering…" : "Recover expired"}</button>}<button className="button button-quiet compact" onClick={() => void readState(activeCaseId)} aria-label="Refresh case"><RefreshCw size={16} /></button></div></div><div className="panel evidence-panel"><div className="panel-heading"><div><span className="mini-label">{readOnly ? "DEMO EVIDENCE · NOT CONTRACT VERIFIED" : "EVIDENCE SNAPSHOT"}</span><h2>Independent records</h2></div><span className="panel-caption">Full-body SHA-256 pinned</span></div><div className="evidence-list"><EvidenceRow contractState={!readOnly} consensusBound={evidenceConsensusBound} label="EVIDENCE A" issuer={String(liveCase.evidence_a_issuer)} group={String(liveCase.evidence_a_group)} record={String(liveCase.evidence_a_record_id)} hash={String(liveCase.evidence_a_hash)} uri={String(liveCase.evidence_a_uri)} /><div className="evidence-connector"><span /> distinct source groups <span /></div><EvidenceRow contractState={!readOnly} consensusBound={evidenceConsensusBound} label="EVIDENCE B" issuer={String(liveCase.evidence_b_issuer)} group={String(liveCase.evidence_b_group)} record={String(liveCase.evidence_b_record_id)} hash={String(liveCase.evidence_b_hash)} uri={String(liveCase.evidence_b_uri)} />{String(liveCase.challenge_uri) && <><div className="evidence-connector challenge-connector"><span /> challenged with independent record <span /></div><EvidenceRow contractState={!readOnly} consensusBound={evidenceConsensusBound} label="CHALLENGE" issuer={String(liveCase.challenge_issuer)} group={String(liveCase.challenge_group)} record={String(liveCase.challenge_record_id)} hash={String(liveCase.challenge_hash)} uri={String(liveCase.challenge_uri)} /></>}</div></div></section>
+          <aside className="workspace-side"><div className="panel policy-panel"><div className="panel-heading"><div><span className="mini-label">{readOnly ? "DEMO POLICY · NOT CONTRACT VERIFIED" : "POLICY"}</span><h2>{String(policy?.name ?? liveCase.policy_name)}</h2></div><Code2 size={18} /></div><p>{String(policy?.policy_text ?? liveCase.policy_text)}</p><div className="policy-fingerprint"><span>VERSION</span><b>v{String(policy?.version ?? liveCase.policy_version)}</b><span>DIGEST</span><code>{shortHash(policy?.policy_digest ?? liveCase.policy_digest, 12, 8)}</code></div><a href={REPOSITORY_URL} target="_blank" rel="noreferrer" className="text-link">View audited source <ExternalLink size={14} /></a></div><div className="panel lifecycle-panel"><div className="panel-heading"><div><span className="mini-label">{readOnly ? "DEMO LIFECYCLE" : "LIFECYCLE"}</span><h2>Review path</h2></div><Activity size={18} /></div><LifecycleItem label="Snapshot pinned" detail={readOnly ? "Demo data only" : "2 issuer-bound records"} done={!readOnly} /><LifecycleItem label="Leader adjudication" detail={resolved && !readOnly ? "Canonical result returned" : readOnly ? "Unavailable without contract state" : "Awaiting resolution"} done={resolved && !readOnly} active={!resolved && !readOnly} /><LifecycleItem label="Challenge window" detail={readOnly ? "Unavailable without contract state" : final || challengeWindowClosed ? final ? "Closed · final" : "Closed · ready to finalize" : "Open until deadline"} done={final && !readOnly} active={resolved && !final && !challengeWindowClosed && !readOnly} /><LifecycleItem label="Consumer predicate" detail={readOnly ? "Locked: contract read unavailable" : consumerReady ? "Available to callers" : final ? "Locked: case is stale" : "Locked until finality"} done={consumerReady} active={false} /></div><div className="panel network-panel"><div className="network-title"><span className="network-pulse" /> Bradbury network</div><div className="network-row"><span>Contract</span><code>{shortHash(CONTRACT_ADDRESS)}</code></div><div className="network-row"><span>{readOnly ? "Demo source" : "Source"}</span><code>SHA {shortHash(String(policy?.policy_digest ?? liveCase.policy_digest), 8, 5)}</code></div><a href={EXPLORER_URL} target="_blank" rel="noreferrer" className="explorer-link">Open Explorer <ExternalLink size={13} /></a></div></aside>
         </div>
-        {tx && <div className="transaction-toast" role="status" aria-live="polite"><div className="tx-icon"><Zap size={16} /></div><div><span>{tx.label} · {tx.status}</span><code>{shortHash(tx.hash, 14, 9)}</code></div><a href={`${EXPLORER_URL}?tx=${tx.hash}`} target="_blank" rel="noreferrer" aria-label="Open transaction in Explorer"><ExternalLink size={15} /></a></div>}
+        {tx && <div className="transaction-toast" role="status" aria-live="polite"><div className="tx-icon"><Zap size={16} /></div><div><span>{tx.label} · {tx.status}</span><code>{shortHash(tx.hash, 14, 9)}</code></div>{pendingAction?.hash === tx.hash && <button className="button button-quiet compact" onClick={() => void monitorTransaction(tx.hash, pendingAction.label, pendingAction.caseId, pendingAction.functionName)}>Retry monitoring</button>}<a href={`${EXPLORER_URL}?tx=${tx.hash}`} target="_blank" rel="noreferrer" aria-label="Open transaction in Explorer"><ExternalLink size={15} /></a></div>}
         <div className="workspace-footer"><button className="text-link" onClick={openLanding}><ArrowRight size={14} className="back-arrow" /> Back to overview</button><span>Every state update is reflected in-place after Bradbury acceptance.</span></div>
       </section>}
       <footer className="footer"><div className="brand"><Logo /><span>Evidence<span className="brand-muted">Bound</span></span></div><span>Source-bound policy decisions for the real world.</span><div className="footer-links"><a href={REPOSITORY_URL} target="_blank" rel="noreferrer"><Github size={14} /> GitHub</a><a href={EXPLORER_URL} target="_blank" rel="noreferrer"><ExternalLink size={14} /> Explorer</a><a href={`${REPOSITORY_URL}/blob/main/docs/AUDIT_REPORT.md`} target="_blank" rel="noreferrer"><BookOpen size={14} /> Audit report</a></div></footer>
@@ -459,8 +552,9 @@ export default function EvidenceBoundApp() {
   );
 }
 
-function EvidenceRow({ label, issuer, group, record, hash, uri }: { label: string; issuer: string; group: string; record: string; hash: string; uri: string }) {
-  return <div className="evidence-row"><div className="evidence-label"><span className="evidence-marker" />{label}</div><div className="evidence-content"><div className="evidence-title"><strong>{record}</strong><StatusPill label="Verified" tone="positive" /></div><div className="evidence-data"><span><small>ISSUER</small>{issuer}</span><span><small>SOURCE GROUP</small>{group}</span><span><small>BODY HASH</small><code>{shortHash(hash, 10, 8)}</code></span></div><a href={uri} target="_blank" rel="noreferrer" className="evidence-uri">{shortHash(uri, 42, 18)} <ExternalLink size={12} /></a></div></div>;
+function EvidenceRow({ contractState, consensusBound, label, issuer, group, record, hash, uri }: { contractState: boolean; consensusBound: boolean; label: string; issuer: string; group: string; record: string; hash: string; uri: string }) {
+  const statusLabel = !contractState ? "Demo data" : consensusBound ? "Consensus bound" : "Onchain snapshot";
+  return <div className="evidence-row"><div className="evidence-label"><span className="evidence-marker" />{label}</div><div className="evidence-content"><div className="evidence-title"><strong>{record}</strong><StatusPill label={statusLabel} tone={!contractState ? "warning" : consensusBound ? "positive" : "neutral"} /></div><div className="evidence-data"><span><small>ISSUER</small>{issuer}</span><span><small>SOURCE GROUP</small>{group}</span><span><small>BODY HASH</small><code>{shortHash(hash, 10, 8)}</code></span></div><a href={uri} target="_blank" rel="noreferrer" className="evidence-uri">{shortHash(uri, 42, 18)} <ExternalLink size={12} /></a></div></div>;
 }
 
 function LifecycleItem({ label, detail, done, active = false }: { label: string; detail: string; done: boolean; active?: boolean }) {
