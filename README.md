@@ -46,14 +46,15 @@ LLM response as authoritative:
 - Each fetched record must carry a non-empty issuer signature artifact and a
   `signed_payload_hash` equal to the pinned full-body hash.
 - The two evidence records must come from different source groups.
-- The leader fetches and checks both records against the pinned snapshot;
-  validators deterministically re-check the snapshot bindings and canonical
-  result without web or LLM calls inside the validator callback.
+- The leader and each validator independently fetch and check both records
+  against the same pinned snapshot; the validator callback compares the
+  consequential decision while allowing explanations to vary.
 - The semantic result is canonicalized to `allowed`, `denied`, `needs_review`,
   or `error`; confidence and reason are derived from the decision.
-- Validators independently re-check the snapshot bindings and every
-  consequential field of the leader's stable canonical decision through the
-  deterministic validator callback; free-form explanations and model-specific
+- Validators independently rerun the source-grounded policy evaluation and
+  compare the consequential decision (`allowed`, `denied`, `needs_review`, or
+  `error`) against the leader result. Snapshot bindings and canonical fields
+  are checked for both runs; free-form explanations and model-specific
   confidence are never consensus inputs.
 - A challenge supplies independent counter-evidence and forces a fresh review.
 - Consumers require finalization, consensus binding, freshness, the exact
@@ -80,9 +81,9 @@ cryptographic signature verification remains an issuer/evidence-layer concern.
 
 - `open_case(...)` — snapshots the policy and two independent evidence records.
 - `resolve_case(case_id)` — the leader reviews the snapshot under
-  `run_nondet_unsafe`; validators deterministically re-check the snapshot
-  binding and canonical result. The validator callback performs no web or LLM
-  calls, as required by the GenLayer execution model.
+  `run_nondet_unsafe`; each validator independently reruns the same
+  source-grounded review and must agree on the consequential decision before
+  the result is stored.
 - `submit_challenge(...)` — adds independent counter-evidence during the
   challenge window and invalidates the prior decision.
 - `resolve_case(case_id)` — re-runs the challenged case from the new snapshot.
@@ -145,8 +146,9 @@ The test suite checks the source structure and regression-sensitive invariants:
 - no `gl.nondet` call or storage write inside a contract method;
 - complete-body hash pinning and metadata binding;
 - distinct corroborating source groups;
-- independent deterministic validator execution and candidate validation;
-- no nondeterministic calls inside the validator callback;
+- independent validator execution and decision-field comparison;
+- no nondeterministic calls outside the `run_nondet_unsafe` leader/validator
+  boundary;
 - challenge invalidation and re-review;
 - evidence repair and expiry recovery;
 - finalization and exact policy fingerprint requirements; and

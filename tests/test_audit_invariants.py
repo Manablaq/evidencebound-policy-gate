@@ -37,13 +37,33 @@ class EvidenceBoundAuditTests(unittest.TestCase):
         self.assertIn("corroboration requires distinct record ids", SOURCE)
         self.assertIn("challenge requires an independent source group", SOURCE)
 
-    def test_validator_callback_is_deterministic_and_validates_stable_candidate(self):
+    def test_validator_callback_independently_binds_the_adjudication(self):
         self.assertIn("gl.vm.run_nondet_unsafe(leader_fn, validator_fn)", SOURCE)
-        self.assertIn("_validator_accepts_candidate(snapshot, leader_data)", SOURCE)
+        self.assertIn("validator_data = _parse_json(str(_evaluate_snapshot(snapshot)))", SOURCE)
+        self.assertIn("_validator_accepts_candidate(snapshot, leader_data, validator_data)", SOURCE)
+        self.assertIn("def _adjudications_match(leader_data: dict, validator_data: dict) -> bool:", SOURCE)
+        self.assertIn('leader_data.get("decision") != validator_data.get("decision")', SOURCE)
         self.assertIn("_snapshot_bindings_valid(snapshot)", SOURCE)
         self.assertIn('decision == "error" and str(value.get("error_code", "")).strip() != ""', SOURCE)
         self.assertNotIn("gl.nondet", ast.get_source_segment(SOURCE, self.contract) or "")
         self.assertIn("confidence\": _confidence_for(decision)", SOURCE)
+
+    def test_opposite_decisions_cannot_share_a_valid_snapshot(self):
+        helper = next(
+            node for node in self.tree.body
+            if isinstance(node, ast.FunctionDef) and node.name == "_adjudications_match"
+        )
+        namespace = {}
+        exec(compile(ast.Module(body=[helper], type_ignores=[]), str(SOURCE_PATH), "exec"), namespace)
+        matches = namespace["_adjudications_match"]
+        allowed = {"decision": "allowed", "error_code": ""}
+        denied = {"decision": "denied", "error_code": ""}
+        error_a = {"decision": "error", "error_code": "evidence_fetch_failed"}
+        error_b = {"decision": "error", "error_code": "evidence_hash_mismatch"}
+        self.assertTrue(matches(allowed, allowed))
+        self.assertFalse(matches(allowed, denied))
+        self.assertTrue(matches(error_a, error_a))
+        self.assertFalse(matches(error_a, error_b))
 
     def test_consumer_predicates_require_exact_finalized_binding(self):
         self.assertIn("case.status == STATUS_FINALIZED", SOURCE)

@@ -1,4 +1,4 @@
-# Review remediation: challenged re-review timeout
+# Review remediation: independent adjudication binding
 
 ## Finding
 
@@ -17,40 +17,37 @@ storage. The deployed contract therefore remained `CHALLENGED`.
 
 ## Root cause
 
-The old validator callback fetched all three records, called the LLM again, and
-required the independent model output to reproduce the leader's full decision
-tuple exactly. This made the challenged path both expensive and sensitive to
-normal nondeterministic model variation. The public receipt proves the validator
-committee timed out or rejected the callback, but does not expose each
-validator's private model output.
+The previously submitted validator callback checked only the snapshot bindings
+and the shape of the leader's canonical result. Because it did not independently
+derive the policy decision, a canonical `allowed` result and a canonical
+`denied` result could both pass for the same evidence snapshot.
 
-## First remediation attempt and remaining issue
+## Earlier remediation attempts
 
-The first remediation replaced exact LLM-output equality with a compact
-candidate-support prompt. That still failed because it called `gl.nondet` from
-inside the validator callback. Bradbury correctly recorded deterministic
-violations, so that intermediate deployment is also historical.
+An earlier remediation tried a compact candidate-support prompt and retained
+the old exact-equality approach in another version. Those paths were either
+too sensitive to normal model variation or did not satisfy the validator
+execution boundary on Bradbury. They remain historical deployments.
 
-## Final remediation
+## Current remediation
 
-The revised source keeps the security boundary intact:
+The current source uses the documented `run_nondet_unsafe` pattern:
 
 1. The leader still fetches and validates every pinned record and produces one
    canonical decision.
-2. The deterministic validator callback independently re-checks the snapshot's
-   issuer/path bindings and every consequential canonical result field.
-3. The validator callback makes no web or LLM call, avoiding GenLayer's
-   deterministic-violation rule.
-4. Free-form model explanations, confidence, and reason text are not used as
-   validator inputs beyond their deterministic canonical derivation.
+2. Each validator independently reruns the same snapshot evaluation, including
+   the web retrieval and policy prompt, inside the validator function.
+3. The validator checks both outputs against the immutable snapshot and requires
+   the consequential decision to match exactly. Error results also require the
+   same stable error code.
+4. Free-form model explanations are not compared, while canonical confidence
+   and reason fields remain deterministic functions of the decision.
 5. Canonical errors remain safe and recoverable, and can never become an allow
    decision.
 
-This removes the nondeterministic-validator and exact-equality failure modes
-while retaining independent deterministic validator review and all
-issuer-provenance controls. The final source is deployed at a new Bradbury
-address and passed a fresh challenged re-review before the Portal submission is
-updated.
+This prevents opposite canonical decisions from both passing the same snapshot
+while preserving issuer provenance, detached payload binding, challenge
+invalidation, repair, and expiry recovery.
 
 ## Verification
 

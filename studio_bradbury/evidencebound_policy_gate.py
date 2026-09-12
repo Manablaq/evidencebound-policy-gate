@@ -453,15 +453,30 @@ def _snapshot_bindings_valid(snapshot: dict) -> bool:
     return True
 
 
-def _validator_accepts_candidate(snapshot: dict, leader_data: dict) -> bool:
-    """Pure validator callback for run_nondet_unsafe.
+def _adjudications_match(leader_data: dict, validator_data: dict) -> bool:
+    """Bind the consequential adjudication across leader and validator runs."""
+    if leader_data.get("decision") != validator_data.get("decision"):
+        return False
+    if leader_data.get("decision") == "error":
+        return leader_data.get("error_code") == validator_data.get("error_code")
+    return True
 
-    GenLayer validator callbacks must be deterministic. The leader performs
-    non-deterministic web/LLM work; validators independently re-check the
-    snapshot bindings and every consequential field of the canonical result,
-    without making another web or LLM call inside the callback.
+
+def _validator_accepts_candidate(snapshot: dict, leader_data: dict,
+                                 validator_data: dict) -> bool:
+    """Accept only when an independent validator reaches the same decision.
+
+    The callback reruns the source-grounded evaluation through ``leader_fn``
+    and passes its result here. Hashes and metadata bind the same snapshot;
+    this comparison binds the consequential policy decision. Explanations are
+    intentionally excluded because they are expected to vary across models.
     """
-    return _snapshot_bindings_valid(snapshot) and _valid_result(leader_data, snapshot)
+    return (
+        _snapshot_bindings_valid(snapshot)
+        and _valid_result(leader_data, snapshot)
+        and _valid_result(validator_data, snapshot)
+        and _adjudications_match(leader_data, validator_data)
+    )
 
 
 def _return_value(value):
@@ -715,9 +730,8 @@ class EvidenceBoundPolicyGate(gl.Contract):
             if not isinstance(leader_result, gl.vm.Return):
                 return False
             leader_data = _parse_json(str(leader_result.calldata))
-            if not _valid_result(leader_data, snapshot):
-                return False
-            return _validator_accepts_candidate(snapshot, leader_data)
+            validator_data = _parse_json(str(_evaluate_snapshot(snapshot)))
+            return _validator_accepts_candidate(snapshot, leader_data, validator_data)
 
         agreed = _parse_json(str(_return_value(gl.vm.run_nondet_unsafe(leader_fn, validator_fn))))
         if not _valid_result(agreed, snapshot):

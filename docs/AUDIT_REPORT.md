@@ -24,10 +24,11 @@ validators and `FINISHED_WITH_RETURN` execution.
 It is a reusable policy gate for claims such as an invoice, entitlement,
 deliverable, moderation result, or profile decision. A case snapshots an
 immutable policy and two independently sourced evidence records. The leader
-fetches and verifies the records and runs semantic policy review; validators
-independently perform deterministic binding and canonical-result checks before
-agreeing on the candidate. A challenge can add independent counter-evidence and
-forces a fresh review. Only a finalized, unexpired, consensus-bound decision
+fetches and verifies the records and runs semantic policy review; each validator
+independently repeats that source-grounded review and compares the
+consequential decision before agreeing on the candidate. A challenge can add
+independent counter-evidence and forces a fresh review. Only a finalized,
+unexpired, consensus-bound decision
 with the exact policy fingerprint can be consumed.
 
 ## Findings and controls
@@ -56,11 +57,13 @@ boundary, not a claim of asymmetric cryptography inside GenVM.
 ### Validator independence — PASS
 
 The leader executes the nondeterministic web retrieval and semantic review
-against an immutable snapshot. The validator callback is deterministic: it
-re-checks the snapshot's publisher bindings, source-group separation, duplicate
-guards, and every consequential field of the leader's canonical result. It makes
-no web or LLM call and does not require two nondeterministic explanations or
-confidence fields to be byte-for-byte identical.
+against an immutable snapshot. The validator callback independently reruns that
+same source-grounded evaluation against the snapshot, then checks both outputs'
+publisher bindings, source-group separation, duplicate guards, and canonical
+fields. It requires the consequential decision to match exactly, including the
+error code for an error result. Explanations may differ across models and are
+not consensus inputs. This prevents an `allowed` candidate and a `denied`
+candidate from both being valid for the same snapshot.
 
 ### Stable consequential output — PASS
 
@@ -94,14 +97,14 @@ silently bypass an old finding.
 
 ### Timeout, failed fetch, and expiry recovery — PASS WITH REVISED VALIDATOR PATH
 
-The validator path avoids both the previous exact-equality failure mode and the
-later nondeterministic-callback failure: the leader performs web/LLM work once,
-while the callback only returns the deterministic validity of the stable
-candidate. Evidence or model failures remain canonical and recoverable. The
-requester or owner can repair evidence while the case is live, resetting the
-lifecycle to `OPEN`. An expired, non-finalized case can be marked `RECOVERED`;
-no assets are held by this primitive, so there is no permanently locked escrow
-balance.
+The validator path compares only the consequential decision and stable error
+code, so normal explanation differences do not prevent agreement while a
+decision mismatch does. Both evaluations remain inside the documented
+`run_nondet_unsafe` leader/validator boundary. Evidence or model failures
+remain canonical and recoverable. The requester or owner can repair evidence
+while the case is live, resetting the lifecycle to `OPEN`. An expired,
+non-finalized case can be marked `RECOVERED`; no assets are held by this
+primitive, so there is no permanently locked escrow balance.
 
 ### Deployment parity — PASS WITH SERIALIZATION NOTE
 
