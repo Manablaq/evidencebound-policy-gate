@@ -70,12 +70,14 @@ Deployer: `0x1f87Ae197af539253978d435aD45cCf28Fb95024` (`worker`)
 - The challenged re-review has not been started on this new address because
   the initial resolution must first reach an accepted state.
 
-## Final reviewer-correction deployment
+## Historical issuer-binding remediation deployment — do not submit
 
 - Contract: `0xa3c8291d30372e9990b6d7a4f22dd94b9d8abf97`
 - Transaction: `0xac7bb9697293951baf76c02c5f2cb822058afaf87d4ea5847a30941045f6f5ce`
 - Receipt: `ACCEPTED / AGREE / FINISHED_WITH_RETURN`
 - Deployed source SHA-256: `8f6f168802d13b0d251b2f7e7b23266141996907460d8008e08dc480998fcee3`
+- This deployment is superseded by corrected source commit `3da288c` and
+  source SHA-256 `499057d191b55789291248254ffd71fe9e9b66e03de6f8056330f3bf84b9ef09`.
 - Source copies: `contracts/evidencebound_policy_gate.py` and
   `studio_bradbury/evidencebound_policy_gate.py` are byte-identical.
 - Reviewer correction: issuer publisher URLs are validated as safe HTTPS

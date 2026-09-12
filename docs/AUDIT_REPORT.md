@@ -110,9 +110,11 @@ primitive, so there is no permanently locked escrow balance.
 ### Deployment parity — PASS WITH SERIALIZATION NOTE
 
 The Studio deployment file is byte-for-byte checked against the audited source.
-The deployment transaction was created directly from that exact audited file,
-whose SHA-256 is recorded above; the Bradbury CLI's `genlayer code` method is
-Studio-only, so the explorer address is the public source-verification link.
+The Studio copy is the exact source intended for the next deployment; its
+SHA-256 is recorded above. The earlier Bradbury transactions in the deployment
+log were created from superseded source revisions. The Bradbury CLI's
+`genlayer code` method is Studio-only, so the explorer address for the new
+deployment must be the public source-verification link.
 The submitted address must be the fresh deployment whose source matches the
 corrected hash above; the earlier address is historical and must not be
 submitted for this correction.
