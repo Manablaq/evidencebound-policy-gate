@@ -7,20 +7,14 @@ profile, invoice, deliverable, or other claim.
 
 ## Bradbury deployment
 
-Current corrected deployment: `0x783D0Ac74991408A12ED6ccC2977411984990d28`
-Deployment transaction: `0x6eeb61056e626601aab40b8dea76d778462230c7add7353f36d518fd29cd2984`
-Deployed source SHA-256: `9f8f2f77f91edb40e03cc0ed45a96a16109d6f2bd7260dfb2fcbe9b44fb6ca10`
-
-The deployment was accepted with `AGREE / FINISHED_WITH_RETURN`. This revised
-artifact includes enforceable issuer publisher URL provenance: each issuer is
-registered to a safe HTTPS origin/path, and every evidence URL is checked at
-submission and again during validator re-evaluation. It uses the documented
-Bradbury web and prompt APIs and pins immutable raw fixture response bodies.
-Use the deployment log for the full verification record. Earlier Bradbury
-addresses are historical and must not be submitted. Fresh initial resolution
-and challenged re-review both passed on the new address with five agreeing
-validators and `FINISHED_WITH_RETURN` execution. Finalization remains deferred
-until the challenge window closes.
+This source correction is committed at `3da288c` and has source SHA-256
+`499057d191b55789291248254ffd71fe9e9b66e03de6f8056330f3bf84b9ef09`.
+The previous deployment at
+`0x783D0Ac74991408A12ED6ccC2977411984990d28` is historical because it uses
+the earlier source hash `9f8f2f77f91edb40e03cc0ed45a96a16109d6f2bd7260dfb2fcbe9b44fb6ca10`
+and does not include this independent decision comparison. Do not submit that
+address for this correction. The contract-only `contract-submission` branch
+is ready for a fresh Bradbury deployment from the exact corrected source.
 
 The previous challenged re-review timeout and the revised validator design are
 documented in [`docs/REVIEW_REMEDIATION.md`](docs/REVIEW_REMEDIATION.md).

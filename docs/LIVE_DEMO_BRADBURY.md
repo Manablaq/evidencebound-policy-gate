@@ -1,6 +1,6 @@
 # Live Bradbury demo plan
 
-Deployment: `0x783D0Ac74991408A12ED6ccC2977411984990d28`
+Historical deployment: `0x783D0Ac74991408A12ED6ccC2977411984990d28` (do not submit)
 Policy ID: `1`  
 Policy digest: `d44a82e0b29678f854ff4d2b9db3490d3dbdcea7916bee2d8759486333da57e0`
 
@@ -14,9 +14,10 @@ Immutable raw fixture base URL:
 The live transactions and read-back results are recorded in
 `DEPLOYMENT_LOG_BRADBURY.md`.
 
-The commands below target the final reviewer-correction deployment. They have
-been executed successfully on Bradbury; the accepted transaction IDs and
-read-back states are recorded in `DEPLOYMENT_LOG_BRADBURY.md`.
+The commands below are the live-demo procedure. Update `C` with the fresh
+corrected Bradbury address after its deployment is accepted. The transaction
+IDs and read-back states currently recorded in `DEPLOYMENT_LOG_BRADBURY.md`
+belong to the historical deployment above.
 
 ## Register the three issuers
 

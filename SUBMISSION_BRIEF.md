@@ -43,15 +43,15 @@ threshold.
 - evidence repair and expiry recovery; and
 - exact audited-source/deployment-copy parity.
 
-## Links to attach after deployment
+## Links to attach after the corrected deployment
 
 - Project application repository: `https://github.com/Manablaq/evidencebound-policy-gate`;
 - contract submission artifact: the `contract-submission` branch of that
   repository (frontend files are excluded from that artifact);
-- contract address: `0x783D0Ac74991408A12ED6ccC2977411984990d28`;
-- deployment transaction: `0x6eeb61056e626601aab40b8dea76d778462230c7add7353f36d518fd29cd2984`;
-- deployed source SHA-256: `9f8f2f77f91edb40e03cc0ed45a96a16109d6f2bd7260dfb2fcbe9b44fb6ca10`;
-- Explorer: `https://explorer-bradbury.genlayer.com/address/0x783D0Ac74991408A12ED6ccC2977411984990d28`;
-- live Bradbury lifecycle: accepted setup, initial resolution, challenge, and challenged re-review are recorded in `docs/DEPLOYMENT_LOG_BRADBURY.md`;
+- contract address: pending fresh Bradbury deployment from commit `3da288c`;
+- deployment transaction and Explorer URL: record the fresh deployment only;
+- deployed source SHA-256: `499057d191b55789291248254ffd71fe9e9b66e03de6f8056330f3bf84b9ef09`;
+- previous address `0x783D0Ac74991408A12ED6ccC2977411984990d28` is historical and must not be submitted for this correction;
+- live Bradbury lifecycle: record accepted deployment, independent initial resolution, challenge, and challenged re-review in `docs/DEPLOYMENT_LOG_BRADBURY.md`;
 - audit report: `docs/AUDIT_REPORT.md`;
 - evidence schema: `docs/EVIDENCE_RECORD_SPEC.md`.
