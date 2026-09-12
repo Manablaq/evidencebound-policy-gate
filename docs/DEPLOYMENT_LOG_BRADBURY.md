@@ -6,15 +6,16 @@ Chain ID: 4221
 RPC: `https://rpc-bradbury.genlayer.com`  
 Deployer: `0x1f87Ae197af539253978d435aD45cCf28Fb95024` (`worker`)
 
-## Current final deterministic-validator remediation deployment
+## Historical prior deployment — do not submit for the current correction
 
 - Contract: `0x783D0Ac74991408A12ED6ccC2977411984990d28`
 - Transaction: `0x6eeb61056e626601aab40b8dea76d778462230c7add7353f36d518fd29cd2984`
 - Receipt: `ACCEPTED / AGREE / FINISHED_WITH_RETURN`
 - Deployed source SHA-256: `9f8f2f77f91edb40e03cc0ed45a96a16109d6f2bd7260dfb2fcbe9b44fb6ca10`
 - Source and Studio copies were byte-identical before deployment.
-- The validator callback contains no `gl.nondet` call; it deterministically
-  re-checks issuer/path bindings and the stable canonical candidate.
+- This deployment predates the independent consequential-decision comparison
+  added in commit `3da288c`; it is historical and must not be submitted for
+  the current correction.
 - Fresh setup transactions all returned `ACCEPTED / AGREE / FINISHED_WITH_RETURN`:
   - issuer `publisher-a`: `0x4f81fe30c7f0884201bf92f6a6dc4dcf4288e48a622a6db21df21791133f6328`
   - issuer `publisher-b`: `0xb278d9196fdd1d9e1af771aa2f555b7979c0e14e92bc0814fd69a5a62811c4d3`
@@ -35,6 +36,19 @@ Deployer: `0x1f87Ae197af539253978d435aD45cCf28Fb95024` (`worker`)
   bound in `resolved_challenge_hash`.
 - Finalization was intentionally not submitted because the challenge window is
   still open. Consumers correctly remain blocked until finalization.
+
+## Corrected source awaiting fresh deployment
+
+- Source commit: `3da288c`
+- Source SHA-256: `499057d191b55789291248254ffd71fe9e9b66e03de6f8056330f3bf84b9ef09`
+- Contract source: `contracts/evidencebound_policy_gate.py`
+- Matching Studio copy: `studio_bradbury/evidencebound_policy_gate.py`
+- Required validator behavior: each validator independently reruns the
+  source-grounded evaluation for the immutable snapshot and must match the
+  leader's consequential decision; opposite `allowed` and `denied` outcomes
+  cannot both pass.
+- Deployment status: pending a fresh Bradbury transaction reaching
+  `ACCEPTED / AGREE / FINISHED_WITH_RETURN`.
 
 ## Historical first stable-validator remediation deployment — do not submit
 

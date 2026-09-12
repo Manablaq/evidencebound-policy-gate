@@ -7,9 +7,10 @@ branch and should be submitted under Project.
 
 ## Bradbury deployment
 
-The corrected source is deployed from `contracts/evidencebound_policy_gate.py`
-after the Bradbury verification recorded in
-[`docs/DEPLOYMENT_LOG_BRADBURY.md`](docs/DEPLOYMENT_LOG_BRADBURY.md).
+The corrected source is ready for a fresh Bradbury deployment from
+`contracts/evidencebound_policy_gate.py`. The previous address recorded in
+[`docs/DEPLOYMENT_LOG_BRADBURY.md`](docs/DEPLOYMENT_LOG_BRADBURY.md) is
+historical because it predates the independent adjudication comparison.
 
 Current source SHA-256:
 
@@ -18,8 +19,8 @@ Current source SHA-256:
 ```
 
 The `studio_bradbury/` copy is byte-identical to the audited contract source.
-Submit the address and transaction recorded in the deployment log together
-with the Explorer source page.
+After deployment, submit only the fresh address and transaction whose
+Explorer source matches this hash.
 
 ## What the contract does
 
