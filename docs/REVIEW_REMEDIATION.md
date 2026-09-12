@@ -49,17 +49,20 @@ This prevents opposite canonical decisions from both passing the same snapshot
 while preserving issuer provenance, detached payload binding, challenge
 invalidation, repair, and expiry recovery.
 
-## Verification
+## Verification of the corrected source
 
-- Local regression suite: 17 tests passing.
+- Local regression suite: 24 tests passing in the full Project repository;
+  the contract-only branch passes its 18-test contract suite.
 - `contracts/evidencebound_policy_gate.py` and
   `studio_bradbury/evidencebound_policy_gate.py`: byte-identical.
-- Final source SHA-256: `9f8f2f77f91edb40e03cc0ed45a96a16109d6f2bd7260dfb2fcbe9b44fb6ca10`.
+- Corrected source commit: `3da288c`.
+- Corrected source SHA-256: `499057d191b55789291248254ffd71fe9e9b66e03de6f8056330f3bf84b9ef09`.
 - The intermediate Bradbury deployment at
   `0xDe282Ff85c1A626dBF5Ca5Bc0CE1DeF6a8a5483F` is historical because its
   validator callback still made nondeterministic calls.
-- Final remediation deployment: `0x783D0Ac74991408A12ED6ccC2977411984990d28`.
-- The fresh accepted initial resolution, challenge, challenged re-review, and
-  read-back all passed. The re-review returned `NEEDS_REVIEW` with
-  `consensus_bound=true`; this is the expected policy result for the challenge
-  fixture, not a validator failure.
+- The previous Bradbury deployments are historical and must not be submitted
+  for this correction because their source hashes predate the independent
+  consequential-decision comparison.
+- A fresh Bradbury deployment and lifecycle verification are still required;
+  no live result is claimed for the corrected source until its deployment
+  matches the hash above and initial/challenged resolutions are accepted.
